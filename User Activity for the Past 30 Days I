@@ -55,7 +55,7 @@ select *
 From (
     select activity_date as day, count(Distinct user_id) as active_users 
     from Activity
-    where DATEDIFF("2019-07-27", activity_date) < 30
+    where activity_date between date_add('2019-07-27', interval -29 day) and '2019-07-27'
     GROUP BY 1
 ) as temp
-where active_users > 1
+where active_users > 0
