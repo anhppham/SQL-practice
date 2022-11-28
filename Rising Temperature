@@ -46,3 +46,12 @@ In 2015-01-04, the temperature was higher than the previous day (20 -> 30).
 select w1.id
 from Weather w1, Weather w2
 where w1.temperature > w2.temperature and (w1.recordDate - w2.recordDate) = 1
+
+#better solution
+SELECT
+    weather.id AS 'Id'
+FROM
+    weather
+        JOIN
+    weather w ON DATEDIFF(weather.recordDate, w.recordDate) = 1
+        AND weather.Temperature > w.Temperature
