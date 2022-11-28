@@ -51,7 +51,11 @@ Output:
 Explanation: Note that we do not care about days with zero active users.
 
 #solution
-select activity_date as day, count(Distinct user_id) as active_users 
-from Activity
-where DATEDIFF("2019-07-27", activity_date) < 30 
-GROUP BY activity_date
+select *
+From (
+    select activity_date as day, count(Distinct user_id) as active_users 
+    from Activity
+    where DATEDIFF("2019-07-27", activity_date) < 30
+    GROUP BY 1
+) as temp
+where active_users > 1
