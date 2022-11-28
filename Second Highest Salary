@@ -1,0 +1,13 @@
+
+//only for the second highest salary where this value exits
+select salary as SecondHighestSalary 
+from Employee 
+group by salary 
+order by salary desc limit 1,1;
+
+
+// working even with only one value exist
+Select 
+    Max(Salary) AS SecondHighestSalary 
+from Employee 
+    where Salary < (Select Max(Salary) from Employee);
