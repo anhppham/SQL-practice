@@ -46,3 +46,10 @@ Explanation:
 - English has 1 student, so we do not include it.
 - Biology has 1 student, so we do not include it.
 - Computer has 1 student, so we do not include it.
+
+# Write your MySQL query statement below
+select class
+from  (select class, count(student) order_count 
+  from Courses group by class) a 
+where order_count>=5
+#order by order_count desc limit 1
