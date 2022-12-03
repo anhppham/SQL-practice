@@ -67,8 +67,7 @@ The product with id 3 was sold after spring 2019.
 We return only product 1 as it is the product that was only sold in the spring of 2019.
 
 #solution
-select DISTINCT sales.product_id, product_name
-from Product, sales 
-where Product.product_id = sales.product_id 
-    and sale_date between '2019-01-01' and '2019-03-31' 
-    and sales.product_id not in (select product_id from sales where sale_date between '2019-04-01' and '2019-12-31')
+select product_id, product_name
+from Product
+where product_id not in (select product_id 
+        from sales where sale_date not between '2019-01-01' and '2019-03-31')
