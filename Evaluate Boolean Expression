@@ -1,0 +1,57 @@
+Input: 
+Variables table:
++------+-------+
+| name | value |
++------+-------+
+| x    | 66    |
+| y    | 77    |
++------+-------+
+Expressions table:
++--------------+----------+---------------+
+| left_operand | operator | right_operand |
++--------------+----------+---------------+
+| x            | >        | y             |
+| x            | <        | y             |
+| x            | =        | y             |
+| y            | >        | x             |
+| y            | <        | x             |
+| x            | =        | x             |
++--------------+----------+---------------+
+Output: 
++--------------+----------+---------------+-------+
+| left_operand | operator | right_operand | value |
++--------------+----------+---------------+-------+
+| x            | >        | y             | false |
+| x            | <        | y             | true  |
+| x            | =        | y             | false |
+| y            | >        | x             | true  |
+| y            | <        | x             | false |
+| x            | =        | x             | true  |
++--------------+----------+---------------+-------+
+
+
+SELECT *
+FROM Expressions e
+JOIN Variables l ON e.left_operand= l.name
+JOIN Variables r ON e.right_operand= r.name;
+
+Output
+| left_operand | operator | right_operand | name | value | name | value |
+| ------------ | -------- | ------------- | ---- | ----- | ---- | ----- |
+| x            | =        | x             | x    | 66    | x    | 66    |
+| y            | <        | x             | y    | 77    | x    | 66    |
+| y            | >        | x             | y    | 77    | x    | 66    |
+| x            | =        | y             | x    | 66    | y    | 77    |
+| x            | <        | y             | x    | 66    | y    | 77    |
+| x            | >        | y             | x    | 66    | y    | 77    |
+
+
+#solution
+SELECT left_operand, operator, right_operand,(case
+       when e.operator = '<' then if(l.value < r.value, 'true', 'false')
+       when e.operator = '>' then if(l.value > r.value, 'true', 'false')
+       else if(l.value = r.value, 'true', 'false') end
+       ) value
+FROM Expressions e
+JOIN Variables l ON e.left_operand= l.name
+JOIN Variables r ON e.right_operand= r.name;
