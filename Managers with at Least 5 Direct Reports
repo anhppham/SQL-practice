@@ -1,0 +1,49 @@
+Input: 
+Employee table:
++-----+-------+------------+-----------+
+| id  | name  | department | managerId |
++-----+-------+------------+-----------+
+| 101 | John  | A          | None      |
+| 102 | Dan   | A          | 101       |
+| 103 | James | A          | 101       |
+| 104 | Amy   | A          | 101       |
+| 105 | Anne  | A          | 101       |
+| 106 | Ron   | B          | 101       |
++-----+-------+------------+-----------+
+Output: 
++------+
+| name |
++------+
+| John |
++------+
+
+#solution
+select name
+from Employee
+where id = (
+    select managerId
+    from Employee
+    group by managerId
+    having count(*) >= 5
+)
+
+#solution 2
+select a.name
+from Employee a 
+inner join Employee b on (a.id = b. managerId)
+group by a.name
+having count(distinct b.id) >= 5
+
+Inner join
+| id  | name | department | managerId | id  | name  | department | managerId |
+| --- | ---- | ---------- | --------- | --- | ----- | ---------- | --------- |
+| 101 | John | A          | 0         | 102 | Dan   | A          | 101       |
+| 101 | John | A          | 0         | 103 | James | A          | 101       |
+| 101 | John | A          | 0         | 104 | Amy   | A          | 101       |
+| 101 | John | A          | 0         | 105 | Anne  | A          | 101       |
+| 101 | John | A          | 0         | 106 | Ron   | B          | 101       |
+
+Group by name
+| id  | name | department | managerId | id  | name | department | managerId |
+| --- | ---- | ---------- | --------- | --- | ---- | ---------- | --------- |
+| 101 | John | A          | 0         | 102 | Dan  | A          | 101       |
