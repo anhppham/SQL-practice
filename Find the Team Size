@@ -1,0 +1,41 @@
+Input: 
+Employee Table:
++-------------+------------+
+| employee_id | team_id    |
++-------------+------------+
+|     1       |     8      |
+|     2       |     8      |
+|     3       |     8      |
+|     4       |     7      |
+|     5       |     9      |
+|     6       |     9      |
++-------------+------------+
+Output: 
++-------------+------------+
+| employee_id | team_size  |
++-------------+------------+
+|     1       |     3      |
+|     2       |     3      |
+|     3       |     3      |
+|     4       |     1      |
+|     5       |     2      |
+|     6       |     2      |
++-------------+------------+
+
+#solution
+select e.employee_id, team_size
+from Employee e left join
+(select team_id, employee_id, count(team_id) team_size
+from employee
+group by team_id) t
+on e.team_id = t.team_id
+
+
+| employee_id | team_id | team_id | employee_id | team_size |
+| ----------- | ------- | ------- | ----------- | --------- |
+| 1           | 8       | 8       | 1           | 3         |
+| 2           | 8       | 8       | 1           | 3         |
+| 3           | 8       | 8       | 1           | 3         |
+| 4           | 7       | 7       | 4           | 1         |
+| 5           | 9       | 9       | 5           | 2         |
+| 6           | 9       | 9       | 5           | 2         |
