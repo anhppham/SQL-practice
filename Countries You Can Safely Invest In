@@ -78,13 +78,40 @@ where total_time > global_time
 
 
 
-# Write your MySQL query statement below
-select * , AVG(duration)*2 total_time
+SELECT Country.name country
+FROM Calls c, Person p, Country 
+WHERE (c.caller_id = p.id or c.callee_id = p.id) and 
+	Country.country_code = SUBSTR(p.phone_number,1,3)
+GROUP BY Country.name
+HAVING avg(duration) > (SELECT AVG(duration) from Calls);
+
+| caller_id | callee_id | duration | id | name     | phone_number | name    | country_code |
+| --------- | --------- | -------- | -- | -------- | ------------ | ------- | ------------ |
+| 1         | 9         | 33       | 9  | Rachel   | 972-0011100  | Israel  | 972          |
+| 1         | 9         | 33       | 1  | Moncef   | 212-1234567  | Morocco | 212          |
+| 2         | 9         | 4        | 9  | Rachel   | 972-0011100  | Israel  | 972          |
+| 2         | 9         | 4        | 2  | Maroua   | 212-6523651  | Morocco | 212          |
+| 1         | 2         | 59       | 2  | Maroua   | 212-6523651  | Morocco | 212          |
+| 1         | 2         | 59       | 1  | Moncef   | 212-1234567  | Morocco | 212          |
+| 3         | 12        | 102      | 12 | Elvis    | 051-7654321  | Peru    | 051          |
+| 3         | 12        | 102      | 3  | Jonathan | 051-1234567  | Peru    | 051          |
+| 3         | 12        | 330      | 12 | Elvis    | 051-7654321  | Peru    | 05...
+
+
+
+| caller_id | callee_id | duration | id | name   | phone_number | name    | country_code | avg(duration) |
+| --------- | --------- | -------- | -- | ------ | ------------ | ------- | ------------ | ------------- |
+| 1         | 9         | 33       | 9  | Rachel | 972-0011100  | Israel  | 972          | 9.375         |
+| 1         | 9         | 33       | 1  | Moncef | 212-1234567  | Morocco | 212          | 27.5          |
+| 3         | 12        | 102      | 12 | Elvis  | 051-7654321  | Peru    | 051          | 145.6667      |
+
+
+#select * , (SUM(if(caller_id = callee_id,duration*2,duration))/count(p.code)) total_time
 #c.name
-    from (select id, SUBSTRING_INDEX(phone_number,'-',1) code from Person) p
-    left join country c on p.code = c.country_code
-    join (select caller_id, duration from calls) c on p.id = c.caller_id
-    group by p.code
+#    from (select id, SUBSTRING_INDEX(phone_number,'-',1) code from Person) p
+#    left join country c on p.code = c.country_code
+#    join (select caller_id, callee_id, duration from calls) c on p.id = c.caller_id 
+#    group by p.code
 
 #select AVG(duration) global_time
 #    from calls
@@ -103,5 +130,4 @@ select * , AVG(duration)*2 total_time
 #select cte.name country
 #from cte, cte1
 #where total_time > global_time
-
 
