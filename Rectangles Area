@@ -1,0 +1,36 @@
+
+with cte as(
+    select p1.id P1, p2.id P2, (abs(p1.x_value-p2.x_value)*abs(p1.y_value-p2.y_value)) AREA
+from points p1 cross join points p2 #on p1.id = p2.id
+where (p1.id != p2.id) and ((abs(p1.x_value-p2.x_value)*abs(p1.y_value-p2.y_value)) != 0)
+order by area desc, p1 asc, p2 asc
+), cte1 as(
+    select distinct *,(lag(AREA,1) OVER (ORDER BY AREA ASC)) previous_result
+    from cte
+)
+select distinct *
+from cte1
+#order by area desc, p1 asc, p2 asc
+
+select distinct p1.id P1, p2.id P2, (abs(p1.x_value-p2.x_value)*abs(p1.y_value-p2.y_value)) AREA
+from points p1 cross join points p2 #on p1.id = p2.id
+where (p1.id != p2.id) and ((abs(p1.x_value-p2.x_value)*abs(p1.y_value-p2.y_value)) != 0)
+order by area desc, p1 asc, p2 asc
+
+
+| id | x_value | y_value | id | x_value | y_value |
+| -- | ------- | ------- | -- | ------- | ------- |
+| 3  | 2       | 10      | 1  | 2       | 7       |
+| 2  | 4       | 8       | 1  | 2       | 7       |
+| 3  | 2       | 10      | 2  | 4       | 8       |
+| 1  | 2       | 7       | 2  | 4       | 8       |
+| 2  | 4       | 8       | 3  | 2       | 10      |
+| 1  | 2       | 7       | 3  | 2       | 10      |
+
+
+| P1 | P2 | AREA |
+| -- | -- | ---- |
+| 2  | 3  | 4    |
+| 3  | 2  | 4    |
+| 1  | 2  | 2    |
+| 2  | 1  | 2    |
