@@ -1,0 +1,112 @@
+
+| school_id | capacity | score | student_count |
+| --------- | -------- | ----- | ------------- |
+| 10        | 99       | 975   | 10            |
+| 9         | 9        | 975   | 10            |
+| 5         | 48       | 975   | 10            |
+| 11        | 151      | 975   | 10            |
+| 10        | 99       | 966   | 60            |
+| 9         | 9        | 966   | 60            |
+| 5         | 48       | 966   | 60            |
+| 11        | 151      | 966   | 60            |
+| 10        | 99       | 844   | 76            |
+| 9         | 9        | 844   | 76            |
+| 5         | 48       | 844   | 76            |
+| 11        | 151      | 844   | 76            |
+| 10        | 99       | 749   | 76            |
+| 9         | 9        | 749   | 76            |
+| 5         | 48       | 749   | 76            |
+| 11        | 151      | 749   | 76            |
+| 10        | 99       | 744   | 100           |
+| 9         | 9        | 744   | 100           |
+| 5         | 48       | 744   | 100    ...
+
+#create the min_distance
+| school_id | capacity | score | student_count | min_distance |
+| --------- | -------- | ----- | ------------- | ------------ |
+| 10        | 99       | 975   | 10            | 89           |
+| 9         | 9        | 975   | 10            | -1           |
+| 5         | 48       | 975   | 10            | 38           |
+| 11        | 151      | 975   | 10            | 141          |
+| 10        | 99       | 966   | 60            | 39           |
+| 9         | 9        | 966   | 60            | -51          |
+| 5         | 48       | 966   | 60            | -12          |
+| 11        | 151      | 966   | 60            | 91           |
+| 10        | 99       | 844   | 76            | 23           |
+| 9         | 9        | 844   | 76            | -67          |
+| 5         | 48       | 844   | 76            | -28          |
+| 11        | 151      | 844   | 76            | 75           |
+| 10        | 99       | 749   | 76            | 23           |
+| 9         | 9        | 749   | 76            | -67   ...
+
+
+select *, (capacity-student_count) min_distance
+from schools 
+cross join exam
+where (capacity-student_count) > 0
+
+#select all min_distance > 0
+| school_id | capacity | score | student_count | min_distance |
+| --------- | -------- | ----- | ------------- | ------------ |
+| 10        | 99       | 975   | 10            | 89           |
+| 5         | 48       | 975   | 10            | 38           |
+| 11        | 151      | 975   | 10            | 141          |
+| 10        | 99       | 966   | 60            | 39           |
+| 11        | 151      | 966   | 60            | 91           |
+| 10        | 99       | 844   | 76            | 23           |
+| 11        | 151      | 844   | 76            | 75           |
+| 10        | 99       | 749   | 76            | 23           |
+| 11        | 151      | 749   | 76            | 75           |
+| 11        | 151      | 744   | 100           | 51           |
+
+
+with cte as(
+    select *, (capacity-student_count) min_distance
+    from schools 
+    cross join exam
+    where (capacity-student_count) > 0
+), etc2 as(
+    select s.school_id,ifnull(c.score,-1) score,min(min_distance)
+from (select school_id from schools) s 
+left join (select school_id,score,min_distance from cte) c on s.school_id = c.school_id
+group by s.school_id
+#order by s.school_id asc
+)
+select school_id, score
+from etc2
+
+
+#correct solution
+SELECT school_id, IFNULL(min(score), -1) as score
+FROM Schools LEFT JOIN Exam ON capacity >= student_count
+GROUP BY school_id
+ORDER BY NULL;
+
+| school_id | capacity | score | student_count |
+| --------- | -------- | ----- | ------------- |
+| 11        | 151      | 744   | 100           |
+| 11        | 151      | 749   | 76            |
+| 11        | 151      | 844   | 76            |
+| 11        | 151      | 966   | 60            |
+| 11        | 151      | 975   | 10            |
+| 5         | 48       | 975   | 10            |
+| 9         | 9        |       |               |
+| 10        | 99       | 749   | 76            |
+| 10        | 99       | 844   | 76            |
+| 10        | 99       | 966   | 60            |
+| 10        | 99       | 975   | 10            |
+
+
+| school_id | school_id | score | min_distance |
+| --------- | --------- | ----- | ------------ |
+| 11        | 11        | 744   | 51           |
+| 11        | 11        | 749   | 75           |
+| 11        | 11        | 844   | 75           |
+| 11        | 11        | 966   | 91           |
+| 11        | 11        | 975   | 141          |
+| 5         | 5         | 975   | 38           |
+| 9         |           |       |              |
+| 10        | 10        | 749   | 23           |
+| 10        | 10        | 844   | 23           |
+| 10        | 10        | 966   | 39           |
+| 10        | 10        | 975   | 89           |
