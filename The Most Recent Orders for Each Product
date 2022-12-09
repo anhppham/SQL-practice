@@ -1,0 +1,100 @@
+Input: 
+Customers table:
++-------------+-----------+
+| customer_id | name      |
++-------------+-----------+
+| 1           | Winston   |
+| 2           | Jonathan  |
+| 3           | Annabelle |
+| 4           | Marwan    |
+| 5           | Khaled    |
++-------------+-----------+
+Orders table:
++----------+------------+-------------+------------+
+| order_id | order_date | customer_id | product_id |
++----------+------------+-------------+------------+
+| 1        | 2020-07-31 | 1           | 1          |
+| 2        | 2020-07-30 | 2           | 2          |
+| 3        | 2020-08-29 | 3           | 3          |
+| 4        | 2020-07-29 | 4           | 1          |
+| 5        | 2020-06-10 | 1           | 2          |
+| 6        | 2020-08-01 | 2           | 1          |
+| 7        | 2020-08-01 | 3           | 1          |
+| 8        | 2020-08-03 | 1           | 2          |
+| 9        | 2020-08-07 | 2           | 3          |
+| 10       | 2020-07-15 | 1           | 2          |
++----------+------------+-------------+------------+
+Products table:
++------------+--------------+-------+
+| product_id | product_name | price |
++------------+--------------+-------+
+| 1          | keyboard     | 120   |
+| 2          | mouse        | 80    |
+| 3          | screen       | 600   |
+| 4          | hard disk    | 450   |
++------------+--------------+-------+
+Output: 
++--------------+------------+----------+------------+
+| product_name | product_id | order_id | order_date |
++--------------+------------+----------+------------+
+| keyboard     | 1          | 6        | 2020-08-01 |
+| keyboard     | 1          | 7        | 2020-08-01 |
+| mouse        | 2          | 8        | 2020-08-03 |
+| screen       | 3          | 3        | 2020-08-29 |
++--------------+------------+----------+------------+
+
+
+select product_name, o.product_id, order_id, order_date
+from products p join orders o on p.product_id = o.product_id  
+where (order_date,o.product_id) in (select max(order_date),product_id order_date from orders group by product_id)
+order by product_name asc, o.product_id asc, order_id asc
+
+
+#only do order date in (max(order_date))
+| product_id | product_name  | price | order_id | order_date | customer_id | product_id |
+| ---------- | ------------- | ----- | -------- | ---------- | ----------- | ---------- |
+| 43         | Bathrobe      | 924   | 546      | 2020-12-20 | 19          | 43         |
+| 38         | Beanie        | 262   | 566      | 2020-07-27 | 19          | 38         |
+| 33         | Blazer        | 690   | 753      | 2020-03-26 | 19          | 33         |
+| 25         | Blush         | 143   | 190      | 2020-05-26 | 19          | 25         |
+| 25         | Blush         | 143   | 338      | 2020-07-15 | 19          | 25         |
+| 104        | Boots         | 687   | 397      | 2020-12-22 | 19          | 104        |
+| 11         | Bowtie        | 216   | 127      | 2020-04-24 | 19          | 11         |
+| 26         | Bra           | 470   | 475      | 2020-03-24 | 1           | 26         |
+| 62         | Bracelet      | 251   | 924      | 2020-07-07 | 19          | 62         |
+| 56         | Bright...
+
+#final correct solution
+| product_id | product_name  | price | order_id | order_date | customer_id | product_id |
+| ---------- | ------------- | ----- | -------- | ---------- | ----------- | ---------- |
+| 43         | Bathrobe      | 924   | 546      | 2020-12-20 | 19          | 43         |
+| 38         | Beanie        | 262   | 566      | 2020-07-27 | 19          | 38         |
+| 33         | Blazer        | 690   | 753      | 2020-03-26 | 19          | 33         |
+| 25         | Blush         | 143   | 338      | 2020-07-15 | 19          | 25         |
+| 104        | Boots         | 687   | 397      | 2020-12-22 | 19          | 104        |
+| 11         | Bowtie        | 216   | 127      | 2020-04-24 | 19          | 11         |
+| 26         | Bra           | 470   | 475      | 2020-03-24 | 1           | 26         |
+| 62         | Bracelet      | 251   | 924      | 2020-07-07 | 19          | 62         |
+| 56         | Brightener    | 253   | 649      | 2020-10-23 | 19          | 56         |
+| 40         | Bronze...
+
+Expected
+| product_name  | product_id | order_id | order_date |
+| ------------- | ---------- | -------- | ---------- |
+| Bathrobe      | 43         | 546      | 2020-12-20 |
+| Beanie        | 38         | 566      | 2020-07-27 |
+| Blazer        | 33         | 753      | 2020-03-26 |
+| Blush         | 25         | 338      | 2020-07-15 |
+| Boots         | 104        | 397      | 2020-12-22 |
+| Bowtie        | 11         | 127      | 2020-04-24 |
+| Bra           | 26         | 475      | 2020-03-24 |
+| Bracelet      | 62         | 924      | 2020-07-07 |
+| Brightener    | 56         | 649      | 2020-10-23 |
+| Bronzer       | 40         | 777      | 2020-08-01 |
+| Brush         | 105        | 272      | 2020-08-17 |
+| Cap           | 63         | 294      | 2020-10-15 |
+| Cardigan      | 77         | 277      | 2020-10-13 |
+| Cargopants    | 35         | 411      | 2020-10-20 |
+| Coat          | 21         | 45       | 2020-10-15 |
+| Concealer     | 115        | 279      | 2020-11-28 |
+| Cottonswab    | 83        ...
