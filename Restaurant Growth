@@ -1,0 +1,64 @@
+
+Input: 
+Customer table:
++-------------+--------------+--------------+-------------+
+| customer_id | name         | visited_on   | amount      |
++-------------+--------------+--------------+-------------+
+| 1           | Jhon         | 2019-01-01   | 100         |
+| 2           | Daniel       | 2019-01-02   | 110         |
+| 3           | Jade         | 2019-01-03   | 120         |
+| 4           | Khaled       | 2019-01-04   | 130         |
+| 5           | Winston      | 2019-01-05   | 110         | 
+| 6           | Elvis        | 2019-01-06   | 140         | 
+| 7           | Anna         | 2019-01-07   | 150         |
+| 8           | Maria        | 2019-01-08   | 80          |
+| 9           | Jaze         | 2019-01-09   | 110         | 
+| 1           | Jhon         | 2019-01-10   | 130         | 
+| 3           | Jade         | 2019-01-10   | 150         | 
++-------------+--------------+--------------+-------------+
+Output: 
++--------------+--------------+----------------+
+| visited_on   | amount       | average_amount |
++--------------+--------------+----------------+
+| 2019-01-07   | 860          | 122.86         |
+| 2019-01-08   | 840          | 120            |
+| 2019-01-09   | 840          | 120            |
+| 2019-01-10   | 1000         | 142.86         |
++--------------+--------------+----------------+
+
+WITH cte AS
+(
+  SELECT DISTINCT visited_on, 
+         SUM(amount) OVER (ORDER BY visited_on
+                           RANGE BETWEEN INTERVAL 6 DAY PRECEDING
+                           AND CURRENT ROW) AS amount
+  FROM Customer
+)
+
+SELECT visited_on, amount, ROUND(amount/7, 2) AS average_amount
+FROM cte AS a
+INNER JOIN
+(SELECT MIN(visited_on) AS min_visited_on FROM cte) AS b
+ON DATEDIFF(visited_on, min_visited_on) >= 6; #if the date between visited_on and min >= 6 days
+
+#cte table
+| visited_on | amount |
+| ---------- | ------ |
+| 2019-01-01 | 100    |
+| 2019-01-02 | 210    |
+| 2019-01-03 | 330    |
+| 2019-01-04 | 460    |
+| 2019-01-05 | 570    |
+| 2019-01-06 | 710    |
+| 2019-01-07 | 860    |
+| 2019-01-08 | 840    |
+| 2019-01-09 | 840    |
+| 2019-01-10 | 1000   |
+
+#inner table join
+| visited_on | amount | min_visited_on |
+| ---------- | ------ | -------------- |
+| 2019-01-07 | 860    | 2019-01-01     |
+| 2019-01-08 | 840    | 2019-01-01     |
+| 2019-01-09 | 840    | 2019-01-01     |
+| 2019-01-10 | 1000   | 2019-01-01     |
