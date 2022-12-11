@@ -1,0 +1,56 @@
+
+
+
+Input: 
+Activity table:
++-----------+-----------+------------+--------------+
+| player_id | device_id | event_date | games_played |
++-----------+-----------+------------+--------------+
+| 1         | 2         | 2016-03-01 | 5            |
+| 1         | 2         | 2016-03-02 | 6            |
+| 2         | 3         | 2017-06-25 | 1            |
+| 3         | 1         | 2016-03-02 | 0            |
+| 3         | 4         | 2018-07-03 | 5            |
++-----------+-----------+------------+--------------+
+Output: 
++-----------+
+| fraction  |
++-----------+
+| 0.33      |
++-----------+
+
+
+
+select *, lag(event_date,1) OVER(ORDER BY event_date ASC) AS next_login
+from activity
+
+| player_id | device_id | event_date | games_played | next_login |
+| --------- | --------- | ---------- | ------------ | ---------- |
+| 1         | 2         | 2016-03-01 | 5            |            |
+| 1         | 2         | 2016-03-02 | 6            | 2016-03-01 |
+| 3         | 1         | 2016-03-02 | 0            | 2016-03-02 |
+| 2         | 3         | 2017-06-25 | 1            | 2016-03-02 |
+| 3         | 4         | 2018-07-03 | 5            | 2017-06-25 |
+
+with cte as(
+select *, lag(event_date,1) OVER(ORDER BY event_date ASC) AS next_login
+from activity
+)
+select *
+from cte
+where (event_date-next_login) = 1
+| player_id | device_id | event_date | games_played | next_login |
+| --------- | --------- | ---------- | ------------ | ---------- |
+| 1         | 2         | 2016-03-02 | 6            | 2016-03-01 |
+
+
+with cte as(
+select *, lag(event_date,1) OVER(ORDER BY event_date ASC) AS next_login
+from activity
+), cte1 as (
+    select count(*) num_palyer
+from cte
+where (event_date-next_login) = 1
+)
+select round((count(*)/(select count(distinct player_id) from Activity)),2) fraction
+from cte1
