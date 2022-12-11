@@ -1,0 +1,121 @@
+
+
+Input: 
+Movies table:
++-------------+--------------+
+| movie_id    |  title       |
++-------------+--------------+
+| 1           | Avengers     |
+| 2           | Frozen 2     |
+| 3           | Joker        |
++-------------+--------------+
+Users table:
++-------------+--------------+
+| user_id     |  name        |
++-------------+--------------+
+| 1           | Daniel       |
+| 2           | Monica       |
+| 3           | Maria        |
+| 4           | James        |
++-------------+--------------+
+MovieRating table:
++-------------+--------------+--------------+-------------+
+| movie_id    | user_id      | rating       | created_at  |
++-------------+--------------+--------------+-------------+
+| 1           | 1            | 3            | 2020-01-12  |
+| 1           | 2            | 4            | 2020-02-11  |
+| 1           | 3            | 2            | 2020-02-12  |
+| 1           | 4            | 1            | 2020-01-01  |
+| 2           | 1            | 5            | 2020-02-17  | 
+| 2           | 2            | 2            | 2020-02-01  | 
+| 2           | 3            | 2            | 2020-03-01  |
+| 3           | 1            | 3            | 2020-02-22  | 
+| 3           | 2            | 4            | 2020-02-25  | 
++-------------+--------------+--------------+-------------+
+Output: 
++--------------+
+| results      |
++--------------+
+| Daniel       |
+| Frozen 2     |
++--------------+
+
+
+
+
+| user_id | movie_id | rating | created_at | title    | name   |
+| ------- | -------- | ------ | ---------- | -------- | ------ |
+| 1       | 3        | 3      | 2020-02-22 | Joker    | Daniel |
+| 1       | 2        | 5      | 2020-02-17 | Frozen 2 | Daniel |
+| 1       | 1        | 3      | 2020-01-12 | Avengers | Daniel |
+| 2       | 3        | 4      | 2020-02-25 | Joker    | Monica |
+| 2       | 2        | 2      | 2020-02-01 | Frozen 2 | Monica |
+| 2       | 1        | 4      | 2020-02-11 | Avengers | Monica |
+| 3       | 2        | 2      | 2020-03-01 | Frozen 2 | Maria  |
+| 3       | 1        | 2      | 2020-02-12 | Avengers | Maria  |
+| 4       | 1        | 1      | 2020-01-01 | Avengers | James  |
+
+
+
+
+select u.name, count(*) count_movie
+from MovieRating mr
+join movies m using(movie_id)
+join users u using(user_id)
+group by name
+order by count_movie desc, u.name asc
+limit 1
+
+| name   | count(*) |
+| ------ | -------- |
+| Daniel | 3        |
+| Monica | 3        |
+| Maria  | 2        |
+| James  | 1        |
+
+select m.title, avg(rating) rating
+from MovieRating mr
+join movies m using(movie_id)
+where created_at between '2020-02-01' and '2020-02-28'
+group by m.title
+order by rating desc, title asc
+limit 1
+
+| movie_id | user_id | rating | created_at | title    |
+| -------- | ------- | ------ | ---------- | -------- |
+| 1        | 3       | 2      | 2020-02-12 | Avengers |
+| 1        | 2       | 4      | 2020-02-11 | Avengers |
+| 2        | 2       | 2      | 2020-02-01 | Frozen 2 |
+| 2        | 1       | 5      | 2020-02-17 | Frozen 2 |
+| 3        | 2       | 4      | 2020-02-25 | Joker    |
+| 3        | 1       | 3      | 2020-02-22 | Joker    |
+
+| title    | avg(rating) |
+| -------- | ----------- |
+| Avengers | 3           |
+| Frozen 2 | 3.5         |
+| Joker    | 3.5         |
+
+
+#final solution
+select name results
+from (
+    select u.name, count(*) count_movie
+from MovieRating mr
+join movies m using(movie_id)
+join users u using(user_id)
+group by name
+order by count_movie desc, u.name asc
+limit 1
+)x
+union
+select title
+from (
+    select m.title, avg(rating) rating
+from MovieRating mr
+join movies m using(movie_id)
+where created_at between '2020-02-01' and '2020-02-28'
+group by m.title
+order by rating desc, title asc
+limit 1
+)t
