@@ -95,6 +95,16 @@ group by request_at
 select c2.request_at, number_trips, ifnull(cancel_number_trips,0) cancel_number_trips
 from cte2 c2 left join cte1 c1 on c1.request_at = c2.request_at
 )
-select request_at Day, round((cancel_number_trips/number_trips),2) Cancellation Rate
+select request_at Day, round((cancel_number_trips/number_trips),2) 'Cancellation Rate'
 from cte3
 order by Day asc
+
+
+#short solution
+select t.Request_at as Day, round(sum(case when t.Status != 'completed' then 1 else 0 end)/count(*),2)
+as 'Cancellation Rate'
+from Trips t
+where t.Client_Id in (select Users_Id from Users where Banned ='No')
+and t.Driver_Id in (select Users_Id from Users where Banned = 'No')
+and t.Request_at between '2013-10-01' and '2013-10-03'
+group by t.Request_at;
