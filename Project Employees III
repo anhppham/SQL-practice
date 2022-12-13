@@ -1,0 +1,31 @@
+
+
+select p.project_id,p.employee_id
+from project p left join employee e on p.employee_id = e.employee_id
+where e.experience_years = (select max(experience_years) from employee)
+
+| project_id | employee_id | employee_id | name   | experience_years |
+| ---------- | ----------- | ----------- | ------ | ---------------- |
+| 1          | 1           | 1           | Khaled | 3                |
+| 1          | 2           | 2           | Ali    | 2                |
+| 1          | 3           | 3           | John   | 3                |
+| 2          | 1           | 1           | Khaled | 3                |
+| 2          | 4           | 4           | Doe    | 2                |
+
+| project_id | employee_id | employee_id | name   | experience_years | max(experience_years) |
+| ---------- | ----------- | ----------- | ------ | ---------------- | --------------------- |
+| 1          | 1           | 1           | Khaled | 3                | 3                     |
+| 2          | 1           | 1           | Khaled | 3                | 3                     |
+
+select p.project_id,p.employee_id
+from project p left join employee e on p.employee_id = e.employee_id
+where (p.project_id,e.experience_years) in (
+    select p.project_id, max(e.experience_years) 
+    from project p left join employee e on p.employee_id = e.employee_id
+    group by p.project_id)
+
+| project_id | employee_id | employee_id | name   | experience_years |
+| ---------- | ----------- | ----------- | ------ | ---------------- |
+| 1          | 1           | 1           | Khaled | 3                |
+| 1          | 3           | 3           | John   | 3                |
+| 2          | 1           | 1           | Khaled | 3                |
