@@ -1,0 +1,58 @@
+
+Input: 
+Logs table:
++------------+
+| log_id     |
++------------+
+| 1          |
+| 2          |
+| 3          |
+| 7          |
+| 8          |
+| 10         |
++------------+
+Output: 
++------------+--------------+
+| start_id   | end_id       |
++------------+--------------+
+| 1          | 3            |
+| 7          | 8            |
+| 10         | 10           |
++------------+--------------+
+
+select *,
+    lag(log_id,1) OVER(ORDER BY log_id ASC) AS new
+from logs
+
+| log_id | new |
+| ------ | --- |
+| 1      |     |
+| 2      | 1   |
+| 3      | 2   |
+| 7      | 3   |
+| 8      | 7   |
+| 10     | 8   |
+
+select min(log_id) as start_id,max(log_id) as end_id
+from (select log_id ,abs(log_id-row_number() over (order by log_id)) as seq
+from Logs) a 
+group by seq
+
+| log_id | seq |
+| ------ | --- |
+| 1      | 0   |
+| 2      | 0   |
+| 3      | 0   |
+| 7      | 3   |
+| 8      | 3   |
+| 10     | 4   |
+
+#solution - new
+SELECT MIN(log_id) AS start_id,MAX(log_id) AS end_id 
+FROM(
+    SELECT log_id,@rank:=CASE WHEN @previous=log_id-1 THEN @rank ELSE @rank+1 END as r,@previous:=log_id as p
+    FROM Logs as a,
+    (SELECT @rank:=0,@previous:=-1) as b
+)c
+GROUP BY c.r
+ORDER BY start_id;
