@@ -1,0 +1,56 @@
+Input: 
+UserActivity table:
++------------+--------------+-------------+-------------+
+| username   | activity     | startDate   | endDate     |
++------------+--------------+-------------+-------------+
+| Alice      | Travel       | 2020-02-12  | 2020-02-20  |
+| Alice      | Dancing      | 2020-02-21  | 2020-02-23  |
+| Alice      | Travel       | 2020-02-24  | 2020-02-28  |
+| Bob        | Travel       | 2020-02-11  | 2020-02-18  |
++------------+--------------+-------------+-------------+
+Output: 
++------------+--------------+-------------+-------------+
+| username   | activity     | startDate   | endDate     |
++------------+--------------+-------------+-------------+
+| Alice      | Dancing      | 2020-02-21  | 2020-02-23  |
+| Bob        | Travel       | 2020-02-11  | 2020-02-18  |
++------------+--------------+-------------+-------------+
+
+
+select *, rank() over (
+    partition by username
+    order by startDate desc) 'rank'
+from UserActivity
+
+| username | activity | startDate  | endDate    | rank |
+| -------- | -------- | ---------- | ---------- | ---- |
+| Alice    | Travel   | 2020-02-24 | 2020-02-28 | 1    |
+| Alice    | Dancing  | 2020-02-21 | 2020-02-23 | 2    |
+| Alice    | Travel   | 2020-02-12 | 2020-02-20 | 3    |
+| Bob      | Travel   | 2020-02-11 | 2020-02-18 | 1    |
+
+select username, count(username) count
+from UserActivity
+group by username
+
+
+with cte as(select username, count(username) count
+from UserActivity
+group by username),
+cte2 as(
+    select *, rank() over (
+    partition by username
+    order by startDate desc) rank_table
+from UserActivity
+)
+select c1.username,activity,startDate,endDate
+from cte2 c1 left join cte c2 on c1.username = c2.username
+where (count != 1 and rank_table = 2) or (count = 1)
+
+
+| username | activity | startDate  | endDate    | rank | username | count |
+| -------- | -------- | ---------- | ---------- | ---- | -------- | ----- |
+| Alice    | Travel   | 2020-02-24 | 2020-02-28 | 1    | Alice    | 3     |
+| Alice    | Dancing  | 2020-02-21 | 2020-02-23 | 2    | Alice    | 3     |
+| Alice    | Travel   | 2020-02-12 | 2020-02-20 | 3    | Alice    | 3     |
+| Bob      | Travel   | 2020-02-11 | 2020-02-18 | 1    | Bob      | 1     |
