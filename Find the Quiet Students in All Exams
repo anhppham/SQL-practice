@@ -1,0 +1,87 @@
+Student table:
++-------------+---------------+
+| student_id  | student_name  |
++-------------+---------------+
+| 1           | Daniel        |
+| 2           | Jade          |
+| 3           | Stella        |
+| 4           | Jonathan      |
+| 5           | Will          |
++-------------+---------------+
+Exam table:
++------------+--------------+-----------+
+| exam_id    | student_id   | score     |
++------------+--------------+-----------+
+| 10         |     1        |    70     |
+| 10         |     2        |    80     |
+| 10         |     3        |    90     |
+| 20         |     1        |    80     |
+| 30         |     1        |    70     |
+| 30         |     3        |    80     |
+| 30         |     4        |    90     |
+| 40         |     1        |    60     |
+| 40         |     2        |    70     |
+| 40         |     4        |    80     |
++------------+--------------+-----------+
+Output: 
++-------------+---------------+
+| student_id  | student_name  |
++-------------+---------------+
+| 2           | Jade          |
++-------------+---------------+
+
+
+
+| exam_id | student_id | score | student_id | student_name |
+| ------- | ---------- | ----- | ---------- | ------------ |
+| 10      | 1          | 70    | 1          | Daniel       |
+| 10      | 2          | 80    | 2          | Jade         |
+| 10      | 3          | 90    | 3          | Stella       |
+| 20      | 1          | 80    | 1          | Daniel       |
+| 30      | 1          | 70    | 1          | Daniel       |
+| 30      | 3          | 80    | 3          | Stella       |
+| 30      | 4          | 90    | 4          | Jonathan     |
+| 40      | 1          | 60    | 1          | Daniel       |
+| 40      | 2          | 70    | 2          | Jade         |
+| 40      | 4          | 80    | 4          | Jonathan     |
+
+
+with cte as(
+    select e.exam_id, e.student_id, e.score, s.student_name
+from exam e left join student s on e.student_id = s.student_id
+), cte2 as(
+    select exam_id, max(score) score 
+    from cte 
+    group by exam_id
+    union 
+    select exam_id, min(score) score from cte group by exam_id
+)
+select *
+from cte2 c2 left join cte c1 on c2.exam_id=c1.exam_id and c2.score = c1.score
+
+
+#solution
+with cte as(
+    select e.exam_id, e.student_id, e.score, s.student_name
+from exam e left join student s on e.student_id = s.student_id
+), cte2 as(
+    select exam_id, max(score) score 
+    from cte 
+    group by exam_id
+    union 
+    select exam_id, min(score) score from cte group by exam_id
+)
+select distinct student_id,student_name
+from cte
+where (student_id,student_name) not in (select student_id,student_name from cte2 c2 left join cte c1 on c2.exam_id=c1.exam_id and c2.score = c1.score)
+order by student_id
+
+| exam_id | score | exam_id | student_id | score | student_name |
+| ------- | ----- | ------- | ---------- | ----- | ------------ |
+| 10      | 90    | 10      | 3          | 90    | Stella       |
+| 20      | 80    | 20      | 1          | 80    | Daniel       |
+| 30      | 90    | 30      | 4          | 90    | Jonathan     |
+| 40      | 80    | 40      | 4          | 80    | Jonathan     |
+| 10      | 70    | 10      | 1          | 70    | Daniel       |
+| 30      | 70    | 30      | 1          | 70    | Daniel       |
+| 40      | 60    | 40      | 1          | 60    | Daniel       |
