@@ -1,0 +1,90 @@
+Input: 
+Customers table:
++-------------+---------------+
+| customer_id | customer_name |
++-------------+---------------+
+| 1           | Alice         |
+| 4           | Bob           |
+| 5           | Charlie       |
++-------------+---------------+
+Output: 
++-----+
+| ids |
++-----+
+| 2   |
+| 3   |
++-----+
+
+
+
+select *,LEAD(customer_id) over (order by customer_id asc) next_value, lag(customer_id) over (order by customer_id asc) previous_value
+from customers
+
+| customer_id | customer_name | next_value | previous_value |
+| ----------- | ------------- | ---------- | -------------- |
+| 10          | Dalia         | 29         |                |
+| 29          | Refael        | 32         | 10             |
+| 32          | Dalia         | 37         | 29             |
+| 37          | Rachel        | 40         | 32             |
+| 40          | Levi          |            | 37             |
+
+with cte as(
+    select *,LEAD(customer_id) over (order by customer_id asc) next_value, lag(customer_id) over (order by customer_id asc) previous_value
+from customers
+)
+select *,(
+    case 
+    when previous_value = NULL then 1
+    else previous_value 
+    end ) as 'starting', customer_id as 'ending'
+from cte
+| customer_id | customer_name | next_value | previous_value | starting | ending |
+| ----------- | ------------- | ---------- | -------------- | -------- | ------ |
+| 10          | Dalia         | 29         |                |          | 10     |
+| 29          | Refael        | 32         | 10             | 10       | 29     |
+| 32          | Dalia         | 37         | 29             | 29       | 32     |
+| 37          | Rachel        | 40         | 32             | 32       | 37     |
+| 40          | Levi          |            | 37             | 37       | 40     |
+
+
+#left join solution
+with recursive t as (
+select 1 i
+union
+select i+1
+from t
+where i+1<(select max(customer_id) from customers)
+)
+select i as ids
+from t left join customers c on c.customer_id = t.i
+where c.customer_id is NULL
+
+
+| i  | customer_id | customer_name |
+| -- | ----------- | ------------- |
+| 1  |             |               |
+| 2  |             |               |
+| 3  |             |               |
+| 4  |             |               |
+| 5  |             |               |
+| 6  |             |               |
+| 7  |             |               |
+| 8  |             |               |
+| 9  |             |               |
+| 10 | 10          | Dalia         |
+| 11 |             |               |
+| 12 |             |               |
+| 13 |             |               |
+| 14 |             |               |
+| 15 |             |               |
+| 16 |             |               |
+| 17 |             |               |
+| 18 |             |               |
+| 19 |             |               |
+| 20 |             |               |
+| 21 |             |               |
+| 22 |             |               |
+| 23 |             |               |
+| 24 |             |               |
+| 25 |             |               |
+| 26 |             |        ...
