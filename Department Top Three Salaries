@@ -1,0 +1,93 @@
+Input: 
+Employee table:
++----+-------+--------+--------------+
+| id | name  | salary | departmentId |
++----+-------+--------+--------------+
+| 1  | Joe   | 85000  | 1            |
+| 2  | Henry | 80000  | 2            |
+| 3  | Sam   | 60000  | 2            |
+| 4  | Max   | 90000  | 1            |
+| 5  | Janet | 69000  | 1            |
+| 6  | Randy | 85000  | 1            |
+| 7  | Will  | 70000  | 1            |
++----+-------+--------+--------------+
+Department table:
++----+-------+
+| id | name  |
++----+-------+
+| 1  | IT    |
+| 2  | Sales |
++----+-------+
+Output: 
++------------+----------+--------+
+| Department | Employee | Salary |
++------------+----------+--------+
+| IT         | Max      | 90000  |
+| IT         | Joe      | 85000  |
+| IT         | Randy    | 85000  |
+| IT         | Will     | 70000  |
+| Sales      | Henry    | 80000  |
+| Sales      | Sam      | 60000  |
++------------+----------+--------+
+
+
+select *, rank() over (
+    partition by departmentId
+    order by salary desc) ranking
+from employee
+
+| id | name  | salary | departmentId | ranking |
+| -- | ----- | ------ | ------------ | ------- |
+| 4  | Max   | 90000  | 1            | 1       |
+| 1  | Joe   | 85000  | 1            | 2       |
+| 6  | Randy | 85000  | 1            | 2       |
+| 7  | Will  | 70000  | 1            | 4       |
+| 5  | Janet | 69000  | 1            | 5       |
+| 2  | Henry | 80000  | 2            | 1       |
+| 3  | Sam   | 60000  | 2            | 2       |
+
+
+select * #distinct departmentId, salary
+from (select *,
+             row_number() over (partition by departmentId) as seqnum
+      from employee
+      group by salary
+     ) t
+order by departmentId, salary desc
+
+
+| id | name  | salary | departmentId | id | name  |
+| -- | ----- | ------ | ------------ | -- | ----- |
+| 1  | Joe   | 85000  | 1            | 1  | IT    |
+| 2  | Henry | 80000  | 2            | 2  | Sales |
+| 3  | Sam   | 60000  | 2            | 2  | Sales |
+| 4  | Max   | 90000  | 1            | 1  | IT    |
+| 6  | Randy | 85000  | 1            | 1  | IT    |
+| 7  | Will  | 70000  | 1            | 1  | IT    |
+
+
+with cte as(
+    select * #distinct departmentId, salary
+from (select *,
+             row_number() over (partition by departmentId order by salary desc) as seqnum
+      from employee
+      group by departmentId, salary
+     ) t
+order by departmentId, salary desc
+)
+select d.name Department, t.name Employee, t.salary Salary
+from employee t left join department d on t.departmentId = d.id
+where (t.salary,t.departmentId) in (select salary, departmentId from cte where seqnum between 1 and 3)
+
+
+
+
+
+| id | name  | salary | departmentId | seqnum |
+| -- | ----- | ------ | ------------ | ------ |
+| 4  | Max   | 90000  | 1            | 2      |
+| 1  | Joe   | 85000  | 1            | 1      |
+| 7  | Will  | 70000  | 1            | 4      |
+| 5  | Janet | 69000  | 1            | 3      |
+| 2  | Henry | 80000  | 2            | 1      |
+| 3  | Sam   | 60000  | 2            | 2      |
