@@ -1,0 +1,63 @@
+Tasks table:
++---------+----------------+
+| task_id | subtasks_count |
++---------+----------------+
+| 1       | 3              |
+| 2       | 2              |
+| 3       | 4              |
++---------+----------------+
+Executed table:
++---------+------------+
+| task_id | subtask_id |
++---------+------------+
+| 1       | 2          |
+| 3       | 1          |
+| 3       | 2          |
+| 3       | 3          |
+| 3       | 4          |
++---------+------------+
+Output: 
++---------+------------+
+| task_id | subtask_id |
++---------+------------+
+| 1       | 1          |
+| 1       | 3          |
+| 2       | 1          |
+| 2       | 2          |
++---------+------------+
+
+| task_id | subtasks_count | id |
+| ------- | -------------- | -- |
+| 1       | 3              | 3  |
+| 1       | 3              | 2  |
+| 1       | 3              | 1  |
+| 2       | 2              | 2  |
+| 2       | 2              | 1  |
+| 3       | 4              | 4  |
+| 3       | 4              | 3  |
+| 3       | 4              | 2  |
+| 3       | 4              | 1  |
+
+with recursive cte as (
+select 1 id
+union all
+select id + 1 from cte where id < 20
+), subtask as (
+    select task_id, id subtask_id
+    from tasks left join cte on subtasks_count >= id
+)
+select s.task_id, s.subtask_id
+from subtask s left join Executed e on s.task_id = e.task_id and s.subtask_id = e.subtask_id
+where e.subtask_id is NULL
+
+| task_id | subtask_id | subtask_id |
+| ------- | ---------- | ---------- |
+| 1       | 3          |            |
+| 1       | 2          | 2          |
+| 1       | 1          |            |
+| 2       | 2          |            |
+| 2       | 1          |            |
+| 3       | 4          | 4          |
+| 3       | 3          | 3          |
+| 3       | 2          | 2          |
+| 3       | 1          | 1          |
