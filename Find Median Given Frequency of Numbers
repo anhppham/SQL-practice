@@ -1,0 +1,79 @@
+Input: 
+Numbers table:
++-----+-----------+
+| num | frequency |
++-----+-----------+
+| 0   | 7         |
+| 1   | 1         |
+| 2   | 3         |
+| 3   | 1         |
++-----+-----------+
+Output: 
++--------+
+| median |
++--------+
+| 0.0    |
++--------+
+
+
+with recursive cte as(
+    select 0 id
+    union
+    select id+1 from cte where id < 20
+)
+select *
+from cte c left join numbers n on c.id = n.num
+
+
+| id | num | frequency |
+| -- | --- | --------- |
+| 0  | 0   | 7         |
+| 1  | 1   | 1         |
+| 2  | 2   | 3         |
+| 3  | 3   | 1         |
+| 4  |     |           |
+| 5  |     |           |
+| 6  |     |           |
+| 7  |     |           |
+| 8  |     |           |
+| 9  |     |           |
+| 10 |     |           |
+| 11 |     |           |
+| 12 |     |           |
+| 13 |     |           |
+| 14 |     |           |
+| 15 |     |           |
+| 16 |     |           |
+| 17 |     |           |
+| 18 |     |           |
+| 19 |     |           |
+| 20 |     |           |
+
+with recursive cte as(
+    select 0 id
+    union
+    select id+1 from cte where id < 20
+), cte2 as(
+    select *
+from cte c left join numbers n on c.id = n.num
+)
+select *, sum(frequency) over (order by id) as cumulative_sum 
+from cte2 
+where num is not null
+
+| id | num | frequency | cumulative_sum |
+| -- | --- | --------- | -------------- |
+| 0  | 0   | 7         | 7              |
+| 1  | 1   | 1         | 8              |
+| 2  | 2   | 3         | 11             |
+| 3  | 3   | 1         | 12             |
+
+
+#based on the difinition of median - it's frequency must be greater or equal than the diff of total frequency of numbers greater or less than itself.
+select round(avg(num),1) median
+from (
+    select l.num #,abs(sum(sign(l.num - r.num) * r.frequency)) <= max(l.frequency) sequ 
+from numbers l join numbers r
+group by 1
+having abs(sum(sign(l.num - r.num) * r.frequency)) <= max(l.frequency)
+)t
