@@ -1,0 +1,164 @@
+Input: 
+Failed table:
++-------------------+
+| fail_date         |
++-------------------+
+| 2018-12-28        |
+| 2018-12-29        |
+| 2019-01-04        |
+| 2019-01-05        |
++-------------------+
+Succeeded table:
++-------------------+
+| success_date      |
++-------------------+
+| 2018-12-30        |
+| 2018-12-31        |
+| 2019-01-01        |
+| 2019-01-02        |
+| 2019-01-03        |
+| 2019-01-06        |
++-------------------+
+Output: 
++--------------+--------------+--------------+
+| period_state | start_date   | end_date     |
++--------------+--------------+--------------+
+| succeeded    | 2019-01-01   | 2019-01-03   |
+| failed       | 2019-01-04   | 2019-01-05   |
+| succeeded    | 2019-01-06   | 2019-01-06   |
++--------------+--------------+--------------+
+
+with cte as(
+    select * 
+    from failed
+    union
+    select *
+    from Succeeded
+)
+select * #c.fail_date,t.status,x.status
+from cte c left join failed t on c.fail_date = t.fail_date
+left join Succeeded x on c.fail_date = x.success_date
+where year(c.fail_date) != '2018'
+order by c.fail_date
+
+| fail_date  | fail_date  | success_date |
+| ---------- | ---------- | ------------ |
+| 2019-01-01 |            | 2019-01-01   |
+| 2019-01-02 |            | 2019-01-02   |
+| 2019-01-03 |            | 2019-01-03   |
+| 2019-01-04 | 2019-01-04 |              |
+| 2019-01-05 | 2019-01-05 |              |
+| 2019-01-06 |            | 2019-01-06   |
+
+
+| fail_date  | status    | fail_date  | success_date |
+| ---------- | --------- | ---------- | ------------ |
+| 2019-01-01 | Succeeded |            | 2019-01-01   |
+| 2019-01-02 | Succeeded |            | 2019-01-02   |
+| 2019-01-03 | Succeeded |            | 2019-01-03   |
+| 2019-01-04 | failed    | 2019-01-04 |              |
+| 2019-01-05 | failed    | 2019-01-05 |              |
+| 2019-01-06 | Succeeded |            | 2019-01-06   |
+
+| fail_date  | status    | PrevDate   | PrevState |
+| ---------- | --------- | ---------- | --------- |
+| 2019-01-01 | Succeeded | 2019-01-01 | Succeeded |
+| 2019-01-02 | Succeeded | 2019-01-01 | Succeeded |
+| 2019-01-03 | Succeeded | 2019-01-02 | Succeeded |
+| 2019-01-04 | failed    | 2019-01-03 | Succeeded |
+| 2019-01-05 | failed    | 2019-01-04 | failed    |
+| 2019-01-06 | Succeeded | 2019-01-05 | failed    |
+
+
+with cte as(
+    select *, 'failed' as status 
+    from failed
+    union
+    select *, 'Succeeded' as status
+    from Succeeded
+), cte2 as(
+    select c.fail_date, status #c.fail_date,t.status,x.status
+from cte c left join failed t on c.fail_date = t.fail_date
+left join Succeeded x on c.fail_date = x.success_date
+where year(c.fail_date) != '2018'
+order by c.fail_date
+)
+select *, SUM(CASE WHEN DATEDIFF(fail_date,PrevDate) = -1 AND status = PrevState THEN 0 ELSE 1 END) OVER(ORDER BY fail_date) summary
+from (SELECT *,LAG(fail_date,1,fail_date) OVER(ORDER BY fail_date) PrevDate,
+             LAG(status,1,status) OVER(ORDER BY fail_date) PrevState 
+from cte2)t
+
+
+with cte as(
+    select *, 'failed' as status,Row_number() 
+                       OVER (ORDER BY fail_date) rn
+    from failed
+    union
+    select *, 'Succeeded' as status,Row_number() 
+                       OVER (ORDER BY success_date) rn
+    from Succeeded
+), cte2 as(
+    select c.fail_date, status, c.rn #c.fail_date,t.status,x.status
+from cte c left join failed t on c.fail_date = t.fail_date
+left join Succeeded x on c.fail_date = x.success_date
+where year(c.fail_date) != '2018'
+order by c.fail_date
+)
+select *, rank() OVER(partition by status
+ORDER BY fail_date) summary
+from (SELECT *,LAG(fail_date,1,fail_date) OVER(ORDER BY fail_date) PrevDate
+from cte2)t
+GROUP  BY status, Date_add(fail_date, INTERVAL -rn day)
+
+| fail_date  | status    | rn | PrevDate   | summary |
+| ---------- | --------- | -- | ---------- | ------- |
+| 2019-01-04 | failed    | 3  | 2019-01-03 | 1       |
+| 2019-01-01 | Succeeded | 3  | 2019-01-01 | 1       |
+| 2019-01-06 | Succeeded | 6  | 2019-01-05 | 2       |
+
+
+| fail_date  | status    | PrevDate   | PrevState | summary |
+| ---------- | --------- | ---------- | --------- | ------- |
+| 2019-01-01 | Succeeded | 2019-01-01 | Succeeded | 1       |
+| 2019-01-02 | Succeeded | 2019-01-01 | Succeeded | 2       |
+| 2019-01-03 | Succeeded | 2019-01-02 | Succeeded | 3       |
+| 2019-01-04 | failed    | 2019-01-03 | Succeeded | 4       |
+| 2019-01-05 | failed    | 2019-01-04 | failed    | 5       |
+| 2019-01-06 | Succeeded | 2019-01-05 | failed    | 6       |
+
+
+select *, Date_add(success_date, INTERVAL -rn day) new_rank #, Min(success_date) start_date, 
+       #(success_date) end_date
+from success
+GROUP  BY Date_add(success_date, INTERVAL -rn day)
+
+| success_date | status    | rn | new_rank   |
+| ------------ | --------- | -- | ---------- |
+| 2019-01-01   | Succeeded | 1  | 2018-12-31 |
+| 2019-01-02   | Succeeded | 2  | 2018-12-31 |
+| 2019-01-03   | Succeeded | 3  | 2018-12-31 |
+| 2019-01-06   | Succeeded | 4  | 2019-01-02 |
+
+
+#solution
+with fail as(
+    select *, 'failed' as status,Row_number() 
+                       OVER (ORDER BY fail_date) rn
+    from failed
+    where year(fail_date) = '2019'
+), success as(
+     select *, 'succeeded' as status,Row_number() 
+                       OVER (ORDER BY success_date) rn
+    from Succeeded
+    where year(success_date) = '2019'
+)
+select status period_state, Min(success_date) start_date, 
+       max(success_date) end_date
+from success
+GROUP  BY Date_add(success_date, INTERVAL -rn day)
+union 
+select status period_state, Min(fail_date) start_date, 
+       max(fail_date) end_date
+from fail
+GROUP  BY Date_add(fail_date, INTERVAL -rn day)
+order by 2
