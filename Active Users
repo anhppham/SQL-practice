@@ -42,12 +42,51 @@ Output:
 | 7  | 2020-06-10 | 7       | 2020-06-03 |
 
 with cte as(
-    select *, date_add(login_date, interval -ranking day) prev_date
-    from (select *, rank() over(partition by id
+    select distinct *, date_add(login_date, interval -ranking day) prev_date
+    from (select *, dense_rank() over(partition by id
     order by login_date) ranking
     from logins)t
 )
-select id, name 
+select *, count(*) counting #id, name 
+from cte join accounts using(id)
+group by id, prev_date
+#having count(distinct) >=5
+
+| id  | login_date | ranking | prev_date  | name     | counting |
+| --- | ---------- | ------- | ---------- | -------- | -------- |
+| 182 | 2020-06-27 | 1       | 2020-06-26 | Gavriel  | 1        |
+| 182 | 2020-06-29 | 2       | 2020-06-27 | Gavriel  | 1        |
+| 182 | 2020-07-01 | 3       | 2020-06-28 | Gavriel  | 2        |
+| 182 | 2020-07-04 | 5       | 2020-06-29 | Gavriel  | 1        |
+| 119 | 2020-06-26 | 1       | 2020-06-25 | Naftali  | 2        |
+| 119 | 2020-06-29 | 3       | 2020-06-26 | Naftali  | 1        |
+| 119 | 2020-07-04 | 4       | 2020-06-30 | Naftali  | 1        |
+| 31  | 2020-06-26 | 1       | 2020-06-25 | Yaakov   | 1        |
+| 31  | 2020-06-28 | 2       | 2020-06-26 | Yaakov   | 3        |
+| 31  | 2020-07-02 | 5       | 2020-06-27 | Yaakov   | 3        |
+| 136 | 2020-06-26 | 1       | 2020-06-25 | Menachem | 3        |
+| 136 | 2020-07-01 | 4       | 2020-06-27 | Menachem | 2        |
+| 136 | 2020-07-05 | 6       | 2020-06-29 | Menachem | 1        |
+| 142 | 2020-06-27 | 1       | 2020-06-26 | Sarah    | 1        |
+| 142 | 2020-06-29 | 2       | 2020-06-27 | Sarah    | 4        |
+| 142 | 2020-07-04 | 6       | 2020-06-28 | Sarah    | 2        |
+| 204 | 2020-06-27 | 1       | 2020-06-26 | Daniel   | 2        |
+| 204 | 2020-07-01 | 3       | 2020-06-28 | Daniel   | 3        |
+| 49  | 2020-06-30 | 1       | 2020-06-29 | Ezra     | 6        |
+| 27  | 2020-06-26 | 1       | 2020-06-25 | David    | 4        |
+| 27  | 2020-07-01 | 5       | 2020-06-26 | David    | 2        |
+| 27  | 2020-07-04 | 7       | 2020-06-27 | David    | 1        |
+
+
+#solution
+with cte as(
+    select distinct *, date_add(login_date, interval -ranking day) prev_date
+    from (select *, dense_rank() over(partition by id
+    order by login_date) ranking
+    from logins)t
+)
+select distinct id, name #, count(*) counting #
 from cte join accounts using(id)
 group by id, prev_date
 having count(*) >=5
+order by id
