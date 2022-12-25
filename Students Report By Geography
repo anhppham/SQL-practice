@@ -1,0 +1,17 @@
+Input: 
+Student table:
++--------+-----------+
+| name   | continent |
++--------+-----------+
+| Jane   | America   |
+| Pascal | Europe    |
+| Xi     | Asia      |
+| Jack   | America   |
++--------+-----------+
+Output: 
++---------+------+--------+
+| America | Asia | Europe |
++---------+------+--------+
+| Jack    | Xi   | Pascal |
+| Jane    | null | null   |
++---------+------+--------+
