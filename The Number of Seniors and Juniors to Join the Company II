@@ -1,0 +1,36 @@
+Input:
+Candidates table:
++-------------+------------+--------+
+| employee_id | experience | salary |
++-------------+------------+--------+
+| 1           | Junior     | 10000  |
+| 9           | Junior     | 15000  |
+| 2           | Senior     | 20000  |
+| 11          | Senior     | 16000  |
+| 13          | Senior     | 50000  |
+| 4           | Junior     | 40000  |
++-------------+------------+--------+
+Output: 
++-------------+
+| employee_id |
++-------------+
+| 11          |
+| 2           |
+| 1           |
+| 9           |
++-------------+
+
+select *,
+    lag(salary,1) over (partition by experience
+    order by salary) cummualtive
+from candidates
+order by experience, salary
+
+| employee_id | experience | salary | cummualtive |
+| ----------- | ---------- | ------ | ----------- |
+| 11          | Senior     | 16000  |             |
+| 2           | Senior     | 20000  | 16000       |
+| 13          | Senior     | 50000  | 20000       |
+| 1           | Junior     | 10000  |             |
+| 9           | Junior     | 15000  | 10000       |
+| 4           | Junior     | 40000  | 15000       |
