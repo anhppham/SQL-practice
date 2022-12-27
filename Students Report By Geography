@@ -15,3 +15,43 @@ Output:
 | Jack    | Xi   | Pascal |
 | Jane    | null | null   |
 +---------+------+--------+
+
+
+select *
+from (
+    (SELECT @am:=0)t,
+    (
+        SELECT @am:=@am + 1 AS row_id, name AS America
+FROM student
+WHERE continent = 'America'
+ORDER BY America
+    )am
+)
+
+| @am:=0 | row_id | America |
+| ------ | ------ | ------- |
+| 0      | 1      | Jack    |
+| 0      | 2      | Jane    |
+
+
+#solution
+select America, Asia, Europe
+from (
+    (SELECT @as:=0, @am:=0, @eu:=0) t,
+    (
+        SELECT @am:=@am + 1 AS row_id, name AS America
+FROM student
+WHERE continent = 'America'
+ORDER BY America) as am
+    left join
+    (SELECT @as:=@as + 1 AS row_id, name AS Asia
+FROM student
+WHERE continent = 'Asia'
+ORDER BY Asia ) as asi on am.row_id=asi.row_id
+    left join
+    (SELECT @eu:=@eu + 1 AS row_id, name AS Europe
+FROM student
+WHERE continent = 'Europe'
+ORDER BY Europe
+    ) as eu on eu.row_id=am.row_id
+)
