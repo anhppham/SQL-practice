@@ -1,0 +1,29 @@
+
+
+Point table:
++----+
+| x  |
++----+
+| -1 |
+| 0  |
+| 2  |
++----+
+Output: 
++----------+
+| shortest |
++----------+
+| 1        |
++----------+
+
+
+| x  | x  | distancing |
+| -- | -- | ---------- |
+| 2  | -1 | 3          |
+| 0  | -1 | 1          |
+| 2  | 0  | 2          |
+| -1 | 0  | 1          |
+| 0  | 2  | 2          |
+| -1 | 2  | 3          |
+
+select min(abs(p1.x - p2.x)) shortest
+from point p1 join point p2 on p1.x!=p2.x
