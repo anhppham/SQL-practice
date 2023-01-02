@@ -1,0 +1,79 @@
+Input: 
+Point2D table:
++----+----+
+| x  | y  |
++----+----+
+| -1 | -1 |
+| 0  | 0  |
+| -1 | -2 |
++----+----+
+Output: 
++----------+
+| shortest |
++----------+
+| 1.00     |
++----------+
+
+The distance between two points p1(x1, y1) and p2(x2, y2) is sqrt((x2 - x1)2 + (y2 - y1)2).
+
+Write an SQL query to report the shortest distance between any two points from the Point2D table. Round the distance to two decimal points.
+
+
+
+| x  | y  | ranking | next_xpoint | next_ypoint | previous_xpoint | previous_ypoint |
+| -- | -- | ------- | ----------- | ----------- | --------------- | --------------- |
+| -1 | -2 | 1       |             |             | -1              | -1              |
+| -1 | -1 | 2       | -1          | -2          | 0               | 0               |
+| 0  | 0  | 3       | -1          | -1          |                 |                 |
+
+
+| x  | y  | first_distance | second_distance |
+| -- | -- | -------------- | --------------- |
+| -1 | -2 |                | 1               |
+| -1 | -1 | 1              | 1.41            |
+| 0  | 0  | 1.41           |                 |
+
+
+with cte as(
+    select *,lag(x,1) over (order by ranking)next_xpoint, lag(y,1) over (order by ranking) next_ypoint, lead(x,1) over (order by ranking) previous_xpoint,lead(y,1) over (order by ranking) previous_ypoint
+from (select *,row_number() over (order by x,y) ranking
+from point2d)t
+), cte2 as(
+    select x,y, round(sqrt(power((x - next_xpoint),2) + power((y - next_ypoint),2)),2) first_distance, round(sqrt(power((x - previous_xpoint),2) + power((y - previous_xpoint),2)),2) second_distance
+from cte
+)
+select min(first_distance) shortest
+from(
+    select first_distance
+from cte2
+union
+select second_distance
+from cte2
+)t
+
+
+| x  | y  | x  | y  |
+| -- | -- | -- | -- |
+| 0  | 0  | -1 | -1 |
+| -1 | -2 | 0  | 0  |
+| -1 | -1 | 0  | 0  |
+| 0  | 0  | -1 | -2 |
+
+| x_p1 | x_p2 | y_p1 | y_p2 | distancing |
+| ---- | ---- | ---- | ---- | ---------- |
+| -1   | -1   | -2   | -1   | 1          |
+| 0    | -1   | 0    | -1   | 1.41       |
+| -1   | 0    | -2   | 0    | 2.24       |
+| -1   | 0    | -1   | 0    | 1.41       |
+| 0    | -1   | 0    | -2   | 2.24       |
+| -1   | -1   | -1   | -2   | 1          |
+
+with cte as(
+    select *, ROUND(SQRT((POW(x_p1 - x_p2, 2) + POW(y_p1 - y_p2, 2))), 2) distancing
+from(
+    select p1.x x_p1, p2.x x_p2, p1.y y_p1, p2.y y_p2
+from point2d p1 join point2d p2
+on p1.x != p2.x or p1.y != p2.y 
+)t)
+select min(distancing) shortest
+from cte
