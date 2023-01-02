@@ -1,0 +1,24 @@
+Input: 
+Triangle table:
++----+----+----+
+| x  | y  | z  |
++----+----+----+
+| 13 | 15 | 30 |
+| 10 | 20 | 15 |
++----+----+----+
+Output: 
++----+----+----+----------+
+| x  | y  | z  | triangle |
++----+----+----+----------+
+| 13 | 15 | 30 | No       |
+| 10 | 20 | 15 | Yes      |
++----+----+----+----------+
+
+
+select x, y,z,(
+    case
+    #when (power(x,2)+power(y,2))>power(z,2) then 'Yes'
+    when x + y > z AND x + z > y AND y + z > x then 'Yes'
+    else 'No' end
+) triangle
+from triangle
