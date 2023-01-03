@@ -1,0 +1,90 @@
+Input: 
+Salary table:
++----+-------------+--------+------------+
+| id | employee_id | amount | pay_date   |
++----+-------------+--------+------------+
+| 1  | 1           | 9000   | 2017/03/31 |
+| 2  | 2           | 6000   | 2017/03/31 |
+| 3  | 3           | 10000  | 2017/03/31 |
+| 4  | 1           | 7000   | 2017/02/28 |
+| 5  | 2           | 6000   | 2017/02/28 |
+| 6  | 3           | 8000   | 2017/02/28 |
++----+-------------+--------+------------+
+Employee table:
++-------------+---------------+
+| employee_id | department_id |
++-------------+---------------+
+| 1           | 1             |
+| 2           | 2             |
+| 3           | 2             |
++-------------+---------------+
+Output: 
++-----------+---------------+------------+
+| pay_month | department_id | comparison |
++-----------+---------------+------------+
+| 2017-02   | 1             | same       |
+| 2017-03   | 1             | higher     |
+| 2017-02   | 2             | same       |
+| 2017-03   | 2             | lower      |
++-----------+---------------+------------+
+
+
+
+| id | employee_id | amount | pay_date   | employee_id | department_id | pay_month | average   |
+| -- | ----------- | ------ | ---------- | ----------- | ------------- | --------- | --------- |
+| 1  | 1           | 9000   | 2017-03-31 | 1           | 1             | 2017-03   | 8333.3333 |
+| 4  | 1           | 7000   | 2017-02-28 | 1           | 1             | 2017-02   | 7000      |
+
+
+| id | employee_id | amount | pay_date   | employee_id | department_id | pay_date   | pay_month | average   |
+| -- | ----------- | ------ | ---------- | ----------- | ------------- | ---------- | --------- | --------- |
+| 1  | 1           | 9000   | 2017-03-31 | 1           | 1             | 2017-03-31 | 2017-03   | 8333.3333 |
+| 2  | 2           | 6000   | 2017-03-31 | 2           | 2             | 2017-03-31 | 2017-03   | 8333.3333 |
+| 3  | 3           | 10000  | 2017-03-31 | 3           | 2             | 2017-03-31 | 2017-03   | 8333.3333 |
+| 4  | 1           | 7000   | 2017-02-28 | 1           | 1             | 2017-02-28 | 2017-02   | 7000      |
+| 5  | 2           | 6000   | 2017-02-28 | 2           | 2             | 2017-02-28 | 2017-02   | 7000      |
+| 6  | 3           | 8000   | 2017-02-28 | 3           | 2             | 2017-02-28 | 2017-02   | 7000      |
+
+| pay_date   | pay_month | average | department_id |
+| ---------- | --------- | ------- | ------------- |
+| 2017-03-31 | 2017-03   | 9000    | 1             |
+| 2017-03-31 | 2017-03   | 8000    | 2             |
+| 2017-02-28 | 2017-02   | 7000    | 1             |
+| 2017-02-28 | 2017-02   | 7000    | 2             |
+
+| pay_date   | department_id | average_permonth | average_perdaprt |
+| ---------- | ------------- | ---------------- | ---------------- |
+| 2017-03-31 | 1             | 8333.3333        | 9000             |
+| 2017-03-31 | 2             | 8333.3333        | 8000             |
+| 2017-02-28 | 1             | 7000             | 7000             |
+| 2017-02-28 | 2             | 7000             | 7000             |
+
+
+with base_table as (
+    select employee_id,amount,pay_date,DATE_FORMAT(pay_date,'%Y-%m') pay_month
+    from salary
+),cte as(
+    select pay_date,pay_month, avg(amount) average_permonth
+    from base_table
+    group by pay_month
+), cte2 as (
+    select s.employee_id, department_id,c.pay_date,average_permonth,s.pay_month
+from base_table s left join employee e on s.employee_id = e.employee_id
+left join cte c on c.pay_month = s.pay_month
+), cte3 as(
+    select pay_date, avg(amount) average_perdaprt,department_id,s.pay_month
+    from base_table s join employee e on s.employee_id = e.employee_id
+    group by department_id,pay_month
+)
+select pay_month, department_id,(
+    case
+    when average_permonth = average_perdaprt then 'same'
+    when average_permonth < average_perdaprt then 'higher'
+    else 'lower' end
+) comparison
+from (
+    select c1.pay_month,c1.department_id,average_permonth,average_perdaprt
+from cte3 c1 left join cte2 c2 on c1.department_id = c2.department_id and c1.pay_month = c2.pay_month
+group by c1.department_id,c1.pay_month
+)t
+
