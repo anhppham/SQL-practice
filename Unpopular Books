@@ -1,0 +1,62 @@
+
+
+Input: 
+Books table:
++---------+--------------------+----------------+
+| book_id | name               | available_from |
++---------+--------------------+----------------+
+| 1       | "Kalila And Demna" | 2010-01-01     |
+| 2       | "28 Letters"       | 2012-05-12     |
+| 3       | "The Hobbit"       | 2019-06-10     |
+| 4       | "13 Reasons Why"   | 2019-06-01     |
+| 5       | "The Hunger Games" | 2008-09-21     |
++---------+--------------------+----------------+
+Orders table:
++----------+---------+----------+---------------+
+| order_id | book_id | quantity | dispatch_date |
++----------+---------+----------+---------------+
+| 1        | 1       | 2        | 2018-07-26    |
+| 2        | 1       | 1        | 2018-11-05    |
+| 3        | 3       | 8        | 2019-06-11    |
+| 4        | 4       | 6        | 2019-06-05    |
+| 5        | 4       | 5        | 2019-06-20    |
+| 6        | 5       | 9        | 2009-02-02    |
+| 7        | 5       | 8        | 2010-04-13    |
++----------+---------+----------+---------------+
+Output: 
++-----------+--------------------+
+| book_id   | name               |
++-----------+--------------------+
+| 1         | "Kalila And Demna" |
+| 2         | "28 Letters"       |
+| 5         | "The Hunger Games" |
++-----------+--------------------+
+
+select *
+from orders o right join (select * from books where available_from not between date_add('2019-06-23', interval -1 month) and '2019-06-23') b on o.book_id = b.book_id
+
+| order_id | book_id | quantity | dispatch_date | book_id | name             | available_from |
+| -------- | ------- | -------- | ------------- | ------- | ---------------- | -------------- |
+| 2        | 1       | 1        | 2018-11-05    | 1       | Kalila And Demna | 2010-01-01     |
+| 1        | 1       | 2        | 2018-07-26    | 1       | Kalila And Demna | 2010-01-01     |
+|          |         |          |               | 2       | 28 Letters       | 2012-05-12     |
+| 7        | 5       | 8        | 2010-04-13    | 5       | The Hunger Games | 2008-09-21     |
+| 6        | 5       | 9        | 2009-02-02    | 5       | The Hunger Games | 2008-09-21     |
+
+with cte as(
+    select order_id,b.book_id,ifnull(quantity,0) quantity,dispatch_date,name
+from (select * from orders where dispatch_date between date_add('2019-06-23', interval -1 year) and '2019-06-23') o right join (select * from books where available_from not between date_add('2019-06-23', interval -1 month) and '2019-06-23') b on o.book_id = b.book_id
+)
+select book_id, name
+from (select *, sum(quantity) total
+from cte
+group by book_id)t
+where total < 10
+
+
+| book_id | name             | ifnull(sum(quantity),0) |
+| ------- | ---------------- | ----------------------- |
+| 1       | Kalila And Demna | 3                       |
+|         | 28 Letters       | 0                       |
+|         | The Hunger Games | 0                       |
+
