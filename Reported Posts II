@@ -1,0 +1,89 @@
+Input: 
+Actions table:
++---------+---------+-------------+--------+--------+
+| user_id | post_id | action_date | action | extra  |
++---------+---------+-------------+--------+--------+
+| 1       | 1       | 2019-07-01  | view   | null   |
+| 1       | 1       | 2019-07-01  | like   | null   |
+| 1       | 1       | 2019-07-01  | share  | null   |
+| 2       | 2       | 2019-07-04  | view   | null   |
+| 2       | 2       | 2019-07-04  | report | spam   |
+| 3       | 4       | 2019-07-04  | view   | null   |
+| 3       | 4       | 2019-07-04  | report | spam   |
+| 4       | 3       | 2019-07-02  | view   | null   |
+| 4       | 3       | 2019-07-02  | report | spam   |
+| 5       | 2       | 2019-07-03  | view   | null   |
+| 5       | 2       | 2019-07-03  | report | racism |
+| 5       | 5       | 2019-07-03  | view   | null   |
+| 5       | 5       | 2019-07-03  | report | racism |
++---------+---------+-------------+--------+--------+
+Removals table:
++---------+-------------+
+| post_id | remove_date |
++---------+-------------+
+| 2       | 2019-07-20  |
+| 3       | 2019-07-18  |
++---------+-------------+
+Output: 
++-----------------------+
+| average_daily_percent |
++-----------------------+
+| 75.00                 |
++-----------------------+
+Explanation: 
+The percentage for 2019-07-04 is 50% because only one post of two spam reported posts were removed.
+The percentage for 2019-07-02 is 100% because one post was reported as spam and it was removed.
+The other days had no spam reports so the average is (50 + 100) / 2 = 75%
+Note that the output is only one number and that we do not care about the remove dates.
+
+| user_id | post_id | action_date | action | extra | post_id | remove_date |
+| ------- | ------- | ----------- | ------ | ----- | ------- | ----------- |
+| 2       | 2       | 2019-07-04  | report | spam  | 2       | 2019-07-20  |
+| 3       | 4       | 2019-07-04  | report | spam  |         |             |
+| 4       | 3       | 2019-07-02  | report | spam  | 3       | 2019-07-18  |
+
+
+| post_id | action_date | total |
+| ------- | ----------- | ----- |
+| 2       | 2019-07-04  | 2     |
+| 3       | 2019-07-02  | 1     |
+
+with cte as(
+    select *
+from actions a left join removals r using(post_id)
+where extra = 'spam'
+)
+select post_id,action_date, count(*) total
+from cte
+group by action_date
+
+| post_id | action_date | counting |
+| ------- | ----------- | -------- |
+| 2       | 2019-07-04  | 1        |
+| 3       | 2019-07-02  | 1        |
+
+| post_id | action_date | total | remove_date | counting |
+| ------- | ----------- | ----- | ----------- | -------- |
+| 2       | 2019-07-04  | 2     | 2019-07-20  | 1        |
+| 3       | 2019-07-02  | 1     | 2019-07-18  | 1        |
+
+with cte as(
+    select *
+from actions 
+where extra = 'spam'
+), cte2 as (
+    select action_date, count(*) total
+from cte 
+group by action_date
+), cte3 as (
+    select post_id, count(*) counting
+from removals
+group by post_id)
+select round((sum(daily_percent)/count(*)),2) average_daily_percent
+from( 
+    select *, (ifnull(counting,0)/total)*100 daily_percent
+from cte c1 left join cte2 a using(action_date)
+left join cte3 using(post_id)
+group by action_date
+)t
+
