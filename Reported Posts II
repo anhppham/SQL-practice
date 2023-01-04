@@ -70,20 +70,30 @@ group by action_date
 with cte as(
     select *
 from actions 
-where extra = 'spam'
+where extra = 'spam' and action = 'report'
 ), cte2 as (
-    select action_date, count(*) total
+    select distinct action_date, count(*) total
 from cte 
 group by action_date
 ), cte3 as (
-    select post_id, count(*) counting
-from removals
-group by post_id)
+    select r.post_id, action_date, count(*) counting
+    from removals r left join cte using(post_id)
+    group by action_date)
 select round((sum(daily_percent)/count(*)),2) average_daily_percent
 from( 
-    select *, (ifnull(counting,0)/total)*100 daily_percent
+    select action_date, round((ifnull(counting,0)/total)*100,2) daily_percent
 from cte c1 left join cte2 a using(action_date)
-left join cte3 using(post_id)
-group by action_date
+left join cte3 using(action_date)
+group by c1.action_date
 )t
+
+#solution
+SELECT ROUND(AVG(cnt), 2) AS average_daily_percent 
+FROM(
+    SELECT (COUNT(DISTINCT r.post_id)/ COUNT(DISTINCT a.post_id))*100  AS cnt
+FROM Actions a LEFT JOIN Removals r
+ON a.post_id = r.post_id
+WHERE extra='spam' and action = 'report'
+GROUP BY action_date)tmp
+
 
