@@ -60,25 +60,7 @@ from transactions t left join (select *, count(*) chargeback_count from Chargeba
 | 105      | 2019-09    | 5000              | 1                |
 
 
-with cte as (
-    select trans_id, date_format(c.trans_date, '%Y-%m') char_month, country, amount chargeback_amount, count(*) chargeback_count
-    from Chargebacks c left join Transactions t on c.trans_id = t.id
-    group by country, char_month
-), cte2 as(
-    select *, date_format(trans_date, '%Y-%m') trans_month
-    from Transactions
-    where state = 'approved'
-), cte3 as(
-    select *, count(*) approved_count, sum(amount) approved_amount
-from cte2
-group by country,trans_month
-)
-select c1.char_month month, c1.country,ifnull(approved_count,0) approved_count,ifnull(approved_amount,0) approved_amount,chargeback_count,chargeback_amount
-from cte c1 join cte3 c2 on c1.char_month = c2.trans_month
 
-
-
-#alternative
 with cte as (
     select trans_id, date_format(c.trans_date, '%Y-%m') char_month, country, amount chargeback_amount, count(*) chargeback_count
     from Chargebacks c left join Transactions t on c.trans_id = t.id
@@ -99,8 +81,66 @@ union
 select id,country,char_month
 from (select id,country,date_format(t.trans_date, '%Y-%m') month, date_format(c.trans_date, '%Y-%m') char_month
 from transactions t left join Chargebacks c on t.id = c.trans_id)t
-)
-select *
+), base1 as (
+    select max(month) month,country
 from base
-group by month
+where month is not null
+#group by country
+)
+select b.month, b.country, ifnull(approved_count,0) approved_count,ifnull(approved_amount,0) approved_amount,ifnull(chargeback_count,0) chargeback_count,ifnull(chargeback_amount,0) chargeback_amount
+from (select b.month, b.country, ifnull(chargeback_count,0) chargeback_count,ifnull(chargeback_amount,0) chargeback_amount
+    from base1 b 
+    left join cte c1 on b.month = c1.char_month and b.country = c1.country)b
+    left join cte3 c2 on b.month = c2.trans_month and b.country = c2.country
+    
+    
+with cte as (
+    select trans_id, date_format(c.trans_date, '%Y-%m') char_month, country, amount chargeback_amount, count(*) chargeback_count
+    from Chargebacks c left join Transactions t on c.trans_id = t.id
+    group by country, char_month
+), cte2 as(
+    select *, date_format(trans_date, '%Y-%m') trans_month
+    from Transactions
+    where state = 'approved'
+), cte3 as(
+    select *, count(*) approved_count, sum(amount) approved_amount
+from cte2
+group by country,trans_month
+), base as(
+    select distinct country, id
+    from transations
+), base1 as(
+    select id, date_format(trans_date, '%Y-%m') month
+    from transactions
+    union
+    select trans_id, date_format(trans_date, '%Y-%m') month
+    from Chargebacks
+), base2 as(select *
+from (select id, max(month) month
+from base1
+group by id) t left join (select id, country from transactions) m using(id))
+select b.month, b.country, ifnull(approved_count,0) approved_count,ifnull(approved_amount,0) approved_amount,ifnull(chargeback_count,0) chargeback_count,ifnull(chargeback_amount,0) chargeback_amount
+from (select b.month, b.country, ifnull(chargeback_count,0) chargeback_count,ifnull(chargeback_amount,0) chargeback_amount
+    from base2 b 
+    left join cte c1 on b.month = c1.char_month and b.country = c1.country)b
+    left join cte3 c2 on b.month = c2.trans_month and b.country = c2.country
+
+#solution
+SELECT month, country, 
+    SUM(CASE WHEN state = "approved" THEN 1 ELSE 0 END) AS approved_count, 
+    SUM(CASE WHEN state = "approved" THEN amount ELSE 0 END) AS approved_amount,
+     SUM(CASE WHEN state = "back" THEN 1 ELSE 0 END) AS chargeback_count, 
+     SUM(CASE WHEN state = "back" THEN amount ELSE 0 END) AS chargeback_amount
+FROM
+(
+    SELECT date_format(chargebacks.trans_date, '%Y-%m') month, country, 'back' state, amount
+    FROM chargebacks
+    JOIN transactions ON chargebacks.trans_id = transactions.id
+    UNION ALL
+    SELECT date_format(trans_date, '%Y-%m') month, country, state, amount
+    FROM transactions
+    WHERE state = "approved"
+) s
+GROUP BY month, country
+
 
