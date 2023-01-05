@@ -1,0 +1,59 @@
+
+
+Input: 
+Ads table:
++-------+---------+---------+
+| ad_id | user_id | action  |
++-------+---------+---------+
+| 1     | 1       | Clicked |
+| 2     | 2       | Clicked |
+| 3     | 3       | Viewed  |
+| 5     | 5       | Ignored |
+| 1     | 7       | Ignored |
+| 2     | 7       | Viewed  |
+| 3     | 5       | Clicked |
+| 1     | 4       | Viewed  |
+| 2     | 11      | Viewed  |
+| 1     | 2       | Clicked |
++-------+---------+---------+
+Output: 
++-------+-------+
+| ad_id | ctr   |
++-------+-------+
+| 1     | 66.67 |
+| 3     | 50.00 |
+| 2     | 33.33 |
+| 5     | 0.00  |
++-------+-------+
+Explanation: 
+for ad_id = 1, ctr = (2/(2+1)) * 100 = 66.67
+for ad_id = 2, ctr = (1/(1+2)) * 100 = 33.33
+for ad_id = 3, ctr = (1/(1+1)) * 100 = 50.00
+for ad_id = 5, ctr = 0.00, Note that ad_id = 5 has no clicks or views.
+Note that we do not care about Ignored Ads.
+
+
+with cte as(
+    select *, count(action) action_count
+from (select * from ads where action != 'Ignored')t
+group by ad_id
+), cte2 as(
+    select *, count(action) click_count
+from (select * from ads where action = 'Clicked')t
+group by ad_id
+)
+select ad_id, ifnull(round((click_count/action_count)*100,2),0) ctr
+from (select distinct ad_id from ads) a left join cte c using(ad_id)
+left join cte2 c2 using(ad_id)
+order by ctr desc, ad_id asc
+
+| ad_id | user_id | action  | action_count |
+| ----- | ------- | ------- | ------------ |
+| 1     | 1       | Clicked | 3            |
+| 1     | 4       | Viewed  | 3            |
+| 1     | 2       | Clicked | 3            |
+| 2     | 2       | Clicked | 3            |
+| 2     | 7       | Viewed  | 3            |
+| 2     | 11      | Viewed  | 3            |
+| 3     | 3       | Viewed  | 2            |
+| 3     | 5       | Clicked | 2            |
