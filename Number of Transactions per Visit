@@ -132,3 +132,30 @@ order by transactions_count
 | 0                  | 4            |
 | 1                  | 5            |
 | 3                  | 1            |
+
+
+with RECURSIVE missing_one as(
+    select 1 as id
+    from missing_one
+    union
+    select id+1
+    from missing_one where id < 20
+), base as(
+    select visits_count transactions_count, count(visits_count) visits_count
+    from (select count(*) visits_count
+    from visits v left join transactions t on v.user_id = t.user_id and v.visit_date = t.transaction_date
+    where transaction_date is not null
+    group by v.user_id,transaction_date)t
+    group by visits_count
+), cte as(
+    select '0' transactions_count, count(*) visits_count
+    from visits v left join transactions t on v.user_id = t.user_id and v.visit_date = t.transaction_date
+    where transaction_date is null
+    order by v.user_id
+)
+select * 
+from base b right join missing_one m on m.id<=b.transactions_count
+union
+select *
+from cte
+order by transactions_count
