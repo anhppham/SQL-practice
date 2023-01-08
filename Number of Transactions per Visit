@@ -134,9 +134,9 @@ order by transactions_count
 | 3                  | 1            |
 
 
+# Write your MySQL query statement below
 with RECURSIVE missing_one as(
     select 1 as id
-    from missing_one
     union
     select id+1
     from missing_one where id < 20
@@ -153,9 +153,9 @@ with RECURSIVE missing_one as(
     where transaction_date is null
     order by v.user_id
 )
-select * 
-from base b right join missing_one m on m.id<=b.transactions_count
-union
 select *
 from cte
-order by transactions_count
+union
+select id transactions_count, ifnull(visits_count,0) visits_count
+from missing_one m left join ( select transactions_count,visits_count from base group by transactions_count) b on b.transactions_count=m.id
+where id <= (select max(transactions_count) from base)
