@@ -1,0 +1,39 @@
+
+
+Input: 
+SurveyLog table:
++----+--------+-------------+-----------+-------+-----------+
+| id | action | question_id | answer_id | q_num | timestamp |
++----+--------+-------------+-----------+-------+-----------+
+| 5  | show   | 285         | null      | 1     | 123       |
+| 5  | answer | 285         | 124124    | 1     | 124       |
+| 5  | show   | 369         | null      | 2     | 125       |
+| 5  | skip   | 369         | null      | 2     | 126       |
++----+--------+-------------+-----------+-------+-----------+
+Output: 
++------------+
+| survey_log |
++------------+
+| 285        |
++------------+
+Explanation: 
+Question 285 was showed 1 time and answered 1 time. The answer rate of question 285 is 1.0
+Question 369 was showed 1 time and was not answered. The answer rate of question 369 is 0.0
+Question 285 has the highest answer rate.
+
+
+with m as (
+    (select question_id, (answering/showing) rate
+from (select question_id, count(*) showing
+from SurveyLog
+where action = 'show'
+group by question_id)t left join (select question_id, ifnull(count(*),0) answering
+from SurveyLog
+where action = 'answer'
+group by question_id)f using (question_id))
+)
+select question_id survey_log
+from m
+where rate = (select max(rate) from m)
+order by survey_log asc
+limit 1
