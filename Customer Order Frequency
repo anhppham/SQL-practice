@@ -1,0 +1,119 @@
+Input: 
+Customers table:
++--------------+-----------+-------------+
+| customer_id  | name      | country     |
++--------------+-----------+-------------+
+| 1            | Winston   | USA         |
+| 2            | Jonathan  | Peru        |
+| 3            | Moustafa  | Egypt       |
++--------------+-----------+-------------+
+Product table:
++--------------+-------------+-------------+
+| product_id   | description | price       |
++--------------+-------------+-------------+
+| 10           | LC Phone    | 300         |
+| 20           | LC T-Shirt  | 10          |
+| 30           | LC Book     | 45          |
+| 40           | LC Keychain | 2           |
++--------------+-------------+-------------+
+Orders table:
++--------------+-------------+-------------+-------------+-----------+
+| order_id     | customer_id | product_id  | order_date  | quantity  |
++--------------+-------------+-------------+-------------+-----------+
+| 1            | 1           | 10          | 2020-06-10  | 1         |
+| 2            | 1           | 20          | 2020-07-01  | 1         |
+| 3            | 1           | 30          | 2020-07-08  | 2         |
+| 4            | 2           | 10          | 2020-06-15  | 2         |
+| 5            | 2           | 40          | 2020-07-01  | 10        |
+| 6            | 3           | 20          | 2020-06-24  | 2         |
+| 7            | 3           | 30          | 2020-06-25  | 2         |
+| 9            | 3           | 30          | 2020-05-08  | 3         |
++--------------+-------------+-------------+-------------+-----------+
+Output: 
++--------------+------------+
+| customer_id  | name       |  
++--------------+------------+
+| 1            | Winston    |
++--------------+------------+
+Explanation: 
+Winston spent $300 (300 * 1) in June and $100 ( 10 * 1 + 45 * 2) in July 2020.
+Jonathan spent $600 (300 * 2) in June and $20 ( 2 * 10) in July 2020.
+Moustafa spent $110 (10 * 2 + 45 * 2) in June and $0 in July 2020.
+
+
+| product_id | order_id | customer_id | order_date | quantity | description | price | order_month | total_order |
+| ---------- | -------- | ----------- | ---------- | -------- | ----------- | ----- | ----------- | ----------- |
+| 10         | 1        | 1           | 2020-06-10 | 1        | LC Phone    | 300   | 2020-06     | 300         |
+| 20         | 2        | 1           | 2020-07-01 | 1        | LC T-Shirt  | 10    | 2020-07     | 10          |
+| 30         | 3        | 1           | 2020-07-08 | 2        | LC Book     | 45    | 2020-07     | 90          |
+| 10         | 4        | 2           | 2020-06-15 | 2        | LC Phone    | 300   | 2020-06     | 600         |
+| 40         | 5        | 2           | 2020-07-01 | 10       | LC Keychain | 2     | 2020-07     | 20          |
+| 20         | 6        | 3           | 2020-06-24 | 2        | LC T-Shirt  | 10    | 2020-06     | 20          |
+| 30         | 7        | 3           | 2020-06-25 | 2        | LC Book     | 45    | 2020-06     | 90          |
+| 30         | 9        | 3           | 2020-05-08 | 3        | LC Book     | 45    | 2020-05     | 135         |
+
+
+| product_id | order_id | customer_id | order_date | quantity | description | price | order_month | total_order |
+| ---------- | -------- | ----------- | ---------- | -------- | ----------- | ----- | ----------- | ----------- |
+| 10         | 1        | 1           | 2020-06-10 | 1        | LC Phone    | 300   | 2020-06     | 300         |
+| 20         | 2        | 1           | 2020-07-01 | 1        | LC T-Shirt  | 10    | 2020-07     | 10          |
+| 10         | 4        | 2           | 2020-06-15 | 2        | LC Phone    | 300   | 2020-06     | 600         |
+| 40         | 5        | 2           | 2020-07-01 | 10       | LC Keychain | 2     | 2020-07     | 20          |
+| 20         | 6        | 3           | 2020-06-24 | 2        | LC T-Shirt  | 10    | 2020-06     | 20          |
+| 30         | 9        | 3           | 2020-05-08 | 3        | LC Book     | 45    | 2020-05     | 135         |
+
+
+with cte as (
+    select *, sum(total_order) sum_total
+from (select *, date_format(order_date, '%Y-%m') order_month, (quantity*price) total_order
+from orders o left join product p using(product_id))t
+group by customer_id, order_month
+)
+select customer_id
+from cte
+where order_month = '2020-06' and total_order > 100
+union all
+select customer_id
+from cte
+where order_month = '2020-07' and total_order > 100
+
+| product_id | order_id | customer_id | order_date | quantity | description | price | order_month | total_order | sum_total |
+| ---------- | -------- | ----------- | ---------- | -------- | ----------- | ----- | ----------- | ----------- | --------- |
+| 10         | 1        | 1           | 2020-06-10 | 1        | LC Phone    | 300   | 2020-06     | 300         | 300       |
+| 20         | 2        | 1           | 2020-07-01 | 1        | LC T-Shirt  | 10    | 2020-07     | 10          | 100       |
+| 10         | 4        | 2           | 2020-06-15 | 2        | LC Phone    | 300   | 2020-06     | 600         | 600       |
+| 40         | 5        | 2           | 2020-07-01 | 10       | LC Keychain | 2     | 2020-07     | 20          | 20        |
+| 20         | 6        | 3           | 2020-06-24 | 2        | LC T-Shirt  | 10    | 2020-06     | 20          | 110       |
+| 30         | 9        | 3           | 2020-05-08 | 3        | LC Book     | 45    | 2020-05     | 135         | 135       |
+
+| customer_id | june_count | july_count |
+| ----------- | ---------- | ---------- |
+| 1           | Y          | N          |
+| 1           | N          | N          |
+| 2           | Y          | N          |
+| 2           | N          | N          |
+| 3           | Y          | N          |
+| 3           | N          | N          |
+
+with cte as (
+    select *, sum(total_order) sum_total
+from (select *, date_format(order_date, '%Y-%m') order_month, (quantity*price) total_order
+from orders o left join product p using(product_id))t
+group by customer_id, order_month
+), cte2 as (
+    select customer_id, (
+    case
+    when order_month = '2020-06' and sum_total >= 100 then 'Y'
+    else 'N' end
+) june_count, (
+    case
+    when order_month = '2020-07' and sum_total >= 100 then 'Y'
+    else 'N' end
+) july_count
+from cte
+)
+select customer_id,name
+from cte2 c1 left join customers c using(customer_id)
+where june_count = 'Y' or july_count = 'Y'
+group by customer_id
+having count(*) > 1
