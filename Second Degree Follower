@@ -1,0 +1,79 @@
+
+A second-degree follower is a user who:
+
+follows at least one user, and
+is followed by at least one user.
+Write an SQL query to report the second-degree users and the number of their followers.
+
+Return the result table ordered by follower in alphabetical order.
+
+The query result format is in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Follow table:
++----------+----------+
+| followee | follower |
++----------+----------+
+| Alice    | Bob      |
+| Bob      | Cena     |
+| Bob      | Donald   |
+| Donald   | Edward   |
++----------+----------+
+Output: 
++----------+-----+
+| follower | num |
++----------+-----+
+| Bob      | 2   |
+| Donald   | 1   |
++----------+-----+
+Explanation: 
+User Bob has 2 followers. Bob is a second-degree follower because he follows Alice, so we include him in the result table.
+User Donald has 1 follower. Donald is a second-degree follower because he follows Bob, so we include him in the result table.
+User Alice has 1 follower. Alice is not a second-degree follower because she does not follow anyone, so we don not include her in the result table.
+
+
+select *, count(*) followee_count
+from follow
+group by followee
+
+| followee | follower | followee_count |
+| -------- | -------- | -------------- |
+| Alice    | Bob      | 1              |
+| Bob      | Cena     | 2              |
+| Donald   | Edward   | 1              |
+
+select *, count(*) follower_count
+from follow
+group by follower
+
+| followee | follower | follower_count |
+| -------- | -------- | -------------- |
+| Alice    | Bob      | 1              |
+| Bob      | Cena     | 1              |
+| Bob      | Donald   | 1              |
+| Donald   | Edward   | 1              |
+
+
+| follower | followee | follower | followee_count | followee | follower | follower_count |
+| -------- | -------- | -------- | -------------- | -------- | -------- | -------------- |
+| Bob      | Bob      | Cena     | 2              | Alice    | Bob      | 1              |
+| Cena     | null     | null     | null           | Bob      | Cena     | 1              |
+| Donald   | Donald   | Edward   | 1              | Bob      | Donald   | 1              |
+| Edward   | null     | null     | null           | Donald   | Edward   | 1              |
+
+select follower, followee_count num
+from (select f1.follower,followee_count,follower_count
+from (select distinct follower from follow) f1 
+left join (select *, count(*) followee_count
+from follow
+group by followee
+) f2 on f1.follower = f2.followee
+left join (select *, count(*) follower_count
+from follow
+group by follower) f3 on f1.follower = f3.follower)t
+where followee_count is not null and follower_count is not null
+order by follower 
