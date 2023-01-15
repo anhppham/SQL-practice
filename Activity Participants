@@ -1,0 +1,52 @@
+Input: 
+Friends table:
++------+--------------+---------------+
+| id   | name         | activity      |
++------+--------------+---------------+
+| 1    | Jonathan D.  | Eating        |
+| 2    | Jade W.      | Singing       |
+| 3    | Victor J.    | Singing       |
+| 4    | Elvis Q.     | Eating        |
+| 5    | Daniel A.    | Eating        |
+| 6    | Bob B.       | Horse Riding  |
++------+--------------+---------------+
+Activities table:
++------+--------------+
+| id   | name         |
++------+--------------+
+| 1    | Eating       |
+| 2    | Singing      |
+| 3    | Horse Riding |
++------+--------------+
+Output: 
++--------------+
+| activity     |
++--------------+
+| Singing      |
++--------------+
+Explanation: 
+Eating activity is performed by 3 friends, maximum number of participants, (Jonathan D. , Elvis Q. and Daniel A.)
+Horse Riding activity is performed by 1 friend, minimum number of participants, (Bob B.)
+Singing is performed by 2 friends (Victor J. and Jade W.)
+
+select activity, count(activity) count_acctivity
+from friends
+group by activity
+
+| activity     | count_acctivity |
+| ------------ | --------------- |
+| Eating       | 3               |
+| Singing      | 2               |
+| Horse Riding | 1               |
+
+
+with cte as(
+    select activity, count(activity) count_acctivity
+from friends
+group by activity
+)
+select activity
+from cte
+where count_acctivity not in (select max(count_acctivity) count_acctivity from cte
+union 
+select min(count_acctivity) from cte)
