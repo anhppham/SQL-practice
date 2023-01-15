@@ -1,0 +1,227 @@
+
+Write an SQL query to find the total number of users and the total amount spent using the mobile only, the desktop only, and both mobile and desktop together for each date.
+
+Return the result table in any order.
+
+The query result format is in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Spending table:
++---------+------------+----------+--------+
+| user_id | spend_date | platform | amount |
++---------+------------+----------+--------+
+| 1       | 2019-07-01 | mobile   | 100    |
+| 1       | 2019-07-01 | desktop  | 100    |
+| 2       | 2019-07-01 | mobile   | 100    |
+| 2       | 2019-07-02 | mobile   | 100    |
+| 3       | 2019-07-01 | desktop  | 100    |
+| 3       | 2019-07-02 | desktop  | 100    |
++---------+------------+----------+--------+
+Output: 
++------------+----------+--------------+-------------+
+| spend_date | platform | total_amount | total_users |
++------------+----------+--------------+-------------+
+| 2019-07-01 | desktop  | 100          | 1           |
+| 2019-07-01 | mobile   | 100          | 1           |
+| 2019-07-01 | both     | 200          | 1           |
+| 2019-07-02 | desktop  | 100          | 1           |
+| 2019-07-02 | mobile   | 100          | 1           |
+| 2019-07-02 | both     | 0            | 0           |
++------------+----------+--------------+-------------+ 
+Explanation: 
+On 2019-07-01, user 1 purchased using both desktop and mobile, user 2 purchased using mobile only and user 3 purchased using desktop only.
+On 2019-07-02, user 2 purchased using mobile only, user 3 purchased using desktop only and no one purchased using both platforms.
+
+
+select *, count(*) total_users
+from spending
+group by spend_date, platform
+
+| user_id | spend_date | platform | amount | total_users |
+| ------- | ---------- | -------- | ------ | ----------- |
+| 1       | 2019-07-01 | mobile   | 100    | 2           |
+| 1       | 2019-07-01 | desktop  | 100    | 2           |
+| 2       | 2019-07-02 | mobile   | 100    | 1           |
+| 3       | 2019-07-02 | desktop  | 100    | 1           |
+
+with cte as(
+    select *, count(*) total_users
+from spending
+group by spend_date, platform
+)
+select user_id,spend_date, amount, (
+    case
+    when total_users = 2 then 'both' 
+    else platform end
+) platform_new
+from cte
+
+with cte as(
+    select *, count(*) total_users
+from spending
+group by spend_date, platform
+)
+select *, sum(amount_new) total_amount
+from (select user_id,spend_date, amount, 'both' platform_new,
+(
+    case
+    when total_users = 2 then amount 
+    else 0 end
+) amount_new
+from cte)t
+group by spend_date
+
+| user_id | spend_date | platform | amount | users | total_users |
+| ------- | ---------- | -------- | ------ | ----- | ----------- |
+| 1       | 2019-07-01 | mobile   | 100    | 2     | 1           |
+| 2       | 2019-07-02 | mobile   | 100    | 1     | 1           |
+| 3       | 2019-07-02 | desktop  | 100    | 1     | 1           |
+
+| user_id | spend_date | amount | platform_new | amount_new | total_amount |
+| ------- | ---------- | ------ | ------------ | ---------- | ------------ |
+| 1       | 2019-07-01 | 100    | both         | 100        | 200          |
+| 2       | 2019-07-02 | 100    | both         | 0          | 0            |
+
+| user_id | spend_date | amount | platform_new |
+| ------- | ---------- | ------ | ------------ |
+| 1       | 2019-07-01 | 100    | both         |
+| 1       | 2019-07-01 | 100    | both         |
+| 2       | 2019-07-02 | 100    | mobile       |
+| 3       | 2019-07-02 | 100    | desktop      |
+
+
+select user_id, spend_date, (
+    case
+    when users = 2 then total_users_1
+    else 0 end
+)total_users
+from (select *, count(distinct user_id) total_users_1
+from (select *, count(*) users 
+from spending
+group by spend_date, platform)t
+group by user_id
+)m
+| user_id | spend_date | total_users |
+| ------- | ---------- | ----------- |
+| 1       | 2019-07-01 | 1           |
+| 2       | 2019-07-02 | 0           |
+| 3       | 2019-07-02 | 0           |
+
+
+| user_id | spend_date | amount | platform_new | amount_new | total_amount | total_users |
+| ------- | ---------- | ------ | ------------ | ---------- | ------------ | ----------- |
+| 1       | 2019-07-01 | 100    | both         | 100        | 200          | 1           |
+| 2       | 2019-07-02 | 100    | both         | 0          | 0            | 0           |
+
+with cte as(
+    select *, count(*) users
+from spending
+group by spend_date, platform
+), cte2 as(select *, sum(amount_new) total_amount
+from (select user_id,spend_date, amount, 'both' platform_new,
+(
+    case
+    when users = 2 then amount 
+    else 0 end
+) amount_new
+from cte)t
+group by spend_date), cte3 as(
+select user_id, spend_date, (
+    case
+    when users = 2 then total_users_1
+    else 0 end
+)total_users
+from (select *, count(distinct user_id) total_users_1
+from cte
+group by user_id
+)m)
+select spend_date,platform_new,total_amount,total_users
+from cte2 join cte3 using(user_id,spend_date)
+
+| spend_date | platform_new | total_amount | total_users |
+| ---------- | ------------ | ------------ | ----------- |
+| 2019-07-01 | both         | 200          | 1           |
+| 2019-07-02 | both         | 0            | 0           |
+
+
+
+#solution
+with cte as(
+    select *, count(*) users
+from spending
+group by spend_date, platform
+), cte2 as(select *, sum(amount_new) total_amount
+from (select user_id,spend_date, amount, 'both' platform_new,
+(
+    case
+    when users = 2 then amount 
+    else 0 end
+) amount_new
+from cte)t
+group by spend_date), cte3 as(
+select user_id, spend_date, (
+    case
+    when users = 2 then total_users_1
+    else 0 end
+)total_users
+from (select *, count(distinct user_id) total_users_1
+from cte
+group by user_id
+)m)
+select spend_date,platform_new,total_amount,total_users
+from cte2 join cte3 using(user_id,spend_date)
+union
+select spend_date,platform, sum(amount) total_amount, count(distinct user_id) total_users
+from spending
+where platform in ('mobile')
+group by user_id,spend_date
+union 
+select spend_date,platform, sum(amount) total_amount, count(distinct user_id) total_users
+from spending
+where platform in ('desktop')
+group by user_id,spend_date
+
+select spend_date,platform, sum(amount) total_amount, count(distinct user_id) total_users
+from spending
+where platform in ('desktop')
+group by user_id,spend_date
+
+
+| spend_date | platform | total_amount | total_users |
+| ---------- | -------- | ------------ | ----------- |
+| 2019-07-01 | desktop  | 100          | 1           |
+| 2019-07-01 | desktop  | 100          | 1           |
+| 2019-07-02 | desktop  | 100          | 1           |
+
+select spend_date,platform, sum(amount) total_amount, count(distinct user_id) total_users
+from spending
+where platform in ('mobile')
+group by user_id,spend_date
+
+| spend_date | platform | total_amount | total_users |
+| ---------- | -------- | ------------ | ----------- |
+| 2019-07-01 | mobile   | 100          | 1           |
+| 2019-07-01 | mobile   | 100          | 1           |
+| 2019-07-02 | mobile   | 100          | 1           |
+
+
+select spend_date,platform, sum(amount) total_amount, count(distinct user_id) total_users
+from spending
+where platform in ('mobile')
+group by user_id,spend_date
+union 
+select spend_date,platform, sum(amount) total_amount, count(distinct user_id) total_users
+from spending
+where platform in ('desktop')
+group by user_id,spend_date
+
+| spend_date | platform | total_amount | total_users |
+| ---------- | -------- | ------------ | ----------- |
+| 2019-07-01 | mobile   | 100          | 1           |
+| 2019-07-02 | mobile   | 100          | 1           |
+| 2019-07-01 | desktop  | 100          | 1           |
+| 2019-07-02 | desktop  | 100          | 1           |
