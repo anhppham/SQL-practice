@@ -84,6 +84,9 @@ group by user_id)t using(user_id)
 
 
 
+select *
+from Customers c left join Contacts c1 on c.customer_id = user_id
+
 | customer_id | customer_name | email              | user_id | contact_name | contact_email      |
 | ----------- | ------------- | ------------------ | ------- | ------------ | ------------------ |
 | 1           | Alice         | alice@leetcode.com | 1       | Jal          | jal@leetcode.com   |
@@ -93,3 +96,66 @@ group by user_id)t using(user_id)
 | 2           | Bob           | bob@leetcode.com   | 2       | Omar         | omar@leetcode.com  |
 | 13          | John          | john@leetcode.com  | null    | null         | null               |
 | 6           | Alex          | alex@leetcode.com  | 6       | Alice        | alice@leetcode.com |
+
+
+| customer_id | customer_name | email              | user_id | contact_name | contact_email      | customer_id | customer_name | email              |
+| ----------- | ------------- | ------------------ | ------- | ------------ | ------------------ | ----------- | ------------- | ------------------ |
+| 1           | Alice         | alice@leetcode.com | 1       | Jal          | jal@leetcode.com   |             |               |                    |
+| 1           | Alice         | alice@leetcode.com | 1       | John         | john@leetcode.com  | 13          | John          | john@leetcode.com  |
+| 1           | Alice         | alice@leetcode.com | 1       | Bob          | bob@leetcode.com   | 2           | Bob           | bob@leetcode.com   |
+| 2           | Bob           | bob@leetcode.com   | 2       | Meir         | meir@leetcode.com  |             |               |                    |
+| 2           | Bob           | bob@leetcode.com   | 2       | Omar         | omar@leetcode.com  |             |               |                    |
+| 13          | John          | john@leetcode.com  |         |              |                    |             |               |                    |
+| 6           | Alex          | alex@leetcode.com  | 6       | Alice        | alice@leetcode.com | 1           | Alice         | alice@leetcode.com |
+
+
+with cte as(
+    select invoice_id, customer_name, price, user_id
+from invoices i left join (select customer_id, customer_name from Customers) c on i.user_id = c.customer_id
+), cte2 as(
+    select *
+from cte c left join (select user_id, count(*) contacts_cnt
+from Contacts
+group by user_id)t using(user_id)
+)
+select t.customer_id,t.customer_name,contact_name,contact_email,c.customer_id trusted_contacts, count(c.customer_id) trusted_contacts_cnt
+from (select *
+from Customers c left join Contacts c1 on c.customer_id = user_id)t left join customers c on t.contact_email = c.email 
+group by t.customer_id
+
+| customer_id | customer_name | contact_name | contact_email      | trusted_contacts | trusted_contacts_cnt |
+| ----------- | ------------- | ------------ | ------------------ | ---------------- | -------------------- |
+| 1           | Alice         | Jal          | jal@leetcode.com   |                  | 2                    |
+| 2           | Bob           | Meir         | meir@leetcode.com  |                  | 0                    |
+| 13          | John          |              |                    |                  | 0                    |
+| 6           | Alex          | Alice        | alice@leetcode.com | 1                | 1                    |
+
+
+
+| user_id | invoice_id | customer_name | price | contacts_cnt | customer_id | customer_name | contact_name | contact_email      | trusted_contacts | trusted_contacts_cnt |
+| ------- | ---------- | ------------- | ----- | ------------ | ----------- | ------------- | ------------ | ------------------ | ---------------- | -------------------- |
+| 1       | 77         | Alice         | 100   | 3            | 1           | Alice         | Jal          | jal@leetcode.com   |                  | 2                    |
+| 1       | 88         | Alice         | 200   | 3            | 1           | Alice         | Jal          | jal@leetcode.com   |                  | 2                    |
+| 2       | 99         | Bob           | 300   | 2            | 2           | Bob           | Meir         | meir@leetcode.com  |                  | 0                    |
+| 2       | 66         | Bob           | 400   | 2            | 2           | Bob           | Meir         | meir@leetcode.com  |                  | 0                    |
+| 13      | 55         | John          | 500   |              | 13          | John          |              |                    |                  | 0                    |
+| 6       | 44         | Alex          | 60    | 1            | 6           | Alex          | Alice        | alice@leetcode.com | 1                | 1                    |
+
+
+#solution
+with cte as(
+    select invoice_id, customer_name, price, user_id
+from invoices i left join (select customer_id, customer_name from Customers) c on i.user_id = c.customer_id
+), cte2 as(
+    select *
+from cte c left join (select user_id, count(*) contacts_cnt
+from Contacts
+group by user_id)t using(user_id)
+), cte3 as(select t.customer_id,t.customer_name,contact_name,contact_email,c.customer_id trusted_contacts, count(c.customer_id) trusted_contacts_cnt
+from (select *
+from Customers c left join Contacts c1 on c.customer_id = user_id)t left join customers c on t.contact_email = c.email 
+group by t.customer_id)
+select invoice_id,c1.customer_name,price,ifnull(contacts_cnt,0) contacts_cnt, ifnull(trusted_contacts_cnt,0) trusted_contacts_cnt
+from cte2 c1 left join cte3 c2 on c1.user_id = c2.customer_id
+order by invoice_id
+
