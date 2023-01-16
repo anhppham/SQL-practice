@@ -1,0 +1,69 @@
+
+You want to know how long a user visits your application. You decided to create bins of "[0-5>", "[5-10>", "[10-15>", and "15 minutes or more" and count the number of sessions on it.
+
+Write an SQL query to report the (bin, total).
+
+Return the result table in any order.
+
+The query result format is in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Sessions table:
++-------------+---------------+
+| session_id  | duration      |
++-------------+---------------+
+| 1           | 30            |
+| 2           | 199           |
+| 3           | 299           |
+| 4           | 580           |
+| 5           | 1000          |
++-------------+---------------+
+Output: 
++--------------+--------------+
+| bin          | total        |
++--------------+--------------+
+| [0-5>        | 3            |
+| [5-10>       | 1            |
+| [10-15>      | 0            |
+| 15 or more   | 1            |
++--------------+--------------+
+Explanation: 
+For session_id 1, 2, and 3 have a duration greater or equal than 0 minutes and less than 5 minutes.
+For session_id 4 has a duration greater or equal than 5 minutes and less than 10 minutes.
+There is no session with a duration greater than or equal to 10 minutes and less than 15 minutes.
+For session_id 5 has a duration greater than or equal to 15 minutes.
+
+select *, (
+    case
+    when minu_duration between 0 and 4 then '[0-5>'
+    when minu_duration between 5 and 9 then '[5-10>'
+    when minu_duration between 10 and 14 then '[10-15>'
+    else '15 or more' end
+)bin
+from (select *, round((duration/60),2) minu_duration
+from sessions)
+
+| session_id | duration | minu_duration |
+| ---------- | -------- | ------------- |
+| 1          | 30       | 0.5           |
+| 2          | 199      | 3.32          |
+| 3          | 299      | 4.98          |
+| 4          | 580      | 9.67          |
+| 5          | 1000     | 16.67         |
+
+
+SELECT '[0-5>' AS bin, SUM(CASE WHEN duration >= 0 AND duration < 300 THEN 1 ELSE 0 END) total 
+FROM Sessions
+union
+SELECT '[5-10>' AS bin, SUM(CASE WHEN duration >= 300 AND duration < 600 THEN 1 ELSE 0 END) total 
+FROM Sessions
+union
+SELECT '[10-15>' AS bin, SUM(CASE WHEN duration >= 600 AND duration < 900 THEN 1 ELSE 0 END) total 
+FROM Sessions
+union
+SELECT '15 or more' AS bin, SUM(CASE WHEN duration >= 900 THEN 1 ELSE 0 END) total 
+FROM Sessions
