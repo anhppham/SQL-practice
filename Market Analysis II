@@ -1,0 +1,133 @@
+
+
+Write an SQL query to find for each user whether the brand of the second item (by date) they sold is their favorite brand. If a user sold less than two items, report the answer for that user as no. It is guaranteed that no seller sold more than one item on a day.
+
+Return the result table in any order.
+
+The query result format is in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Users table:
++---------+------------+----------------+
+| user_id | join_date  | favorite_brand |
++---------+------------+----------------+
+| 1       | 2019-01-01 | Lenovo         |
+| 2       | 2019-02-09 | Samsung        |
+| 3       | 2019-01-19 | LG             |
+| 4       | 2019-05-21 | HP             |
++---------+------------+----------------+
+Orders table:
++----------+------------+---------+----------+-----------+
+| order_id | order_date | item_id | buyer_id | seller_id |
++----------+------------+---------+----------+-----------+
+| 1        | 2019-08-01 | 4       | 1        | 2         |
+| 2        | 2019-08-02 | 2       | 1        | 3         |
+| 3        | 2019-08-03 | 3       | 2        | 3         |
+| 4        | 2019-08-04 | 1       | 4        | 2         |
+| 5        | 2019-08-04 | 1       | 3        | 4         |
+| 6        | 2019-08-05 | 2       | 2        | 4         |
++----------+------------+---------+----------+-----------+
+Items table:
++---------+------------+
+| item_id | item_brand |
++---------+------------+
+| 1       | Samsung    |
+| 2       | Lenovo     |
+| 3       | LG         |
+| 4       | HP         |
++---------+------------+
+Output: 
++-----------+--------------------+
+| seller_id | 2nd_item_fav_brand |
++-----------+--------------------+
+| 1         | no                 |
+| 2         | yes                |
+| 3         | yes                |
+| 4         | no                 |
++-----------+--------------------+
+Explanation: 
+The answer for the user with id 1 is no because they sold nothing.
+The answer for the users with id 2 and 3 is yes because the brands of their second sold items are their favorite brands.
+The answer for the user with id 4 is no because the brand of their second sold item is not their favorite brand.
+
+
+select *
+from (select order_date,item_id,seller_id from orders) o left join users u on u.user_id = o.seller_id
+left join items i using(item_id)
+
+| item_id | order_date | seller_id | user_id | join_date  | favorite_brand | item_brand |
+| ------- | ---------- | --------- | ------- | ---------- | -------------- | ---------- |
+| 4       | 2019-08-01 | 2         | 2       | 2019-02-09 | Samsung        | HP         |
+| 2       | 2019-08-02 | 3         | 3       | 2019-01-19 | LG             | Lenovo     |
+| 3       | 2019-08-03 | 3         | 3       | 2019-01-19 | LG             | LG         |
+| 1       | 2019-08-04 | 2         | 2       | 2019-02-09 | Samsung        | Samsung    |
+| 1       | 2019-08-04 | 4         | 4       | 2019-05-21 | HP             | Samsung    |
+| 2       | 2019-08-05 | 4         | 4       | 2019-05-21 | HP             | Lenovo     |
+
+select *
+from orders
+where (seller_id,order_date) not in (select seller_id, min(order_date) from orders group by seller_id)
+
+with cte as(
+    select *
+from orders
+where (seller_id,order_date) not in (select seller_id, min(order_date) from orders group by seller_id)
+)
+select *
+from (select order_date,item_id,seller_id from cte) o left join users u on u.user_id = o.seller_id
+left join items i using(item_id)
+
+| item_id | order_date | seller_id | user_id | join_date  | favorite_brand | item_brand |
+| ------- | ---------- | --------- | ------- | ---------- | -------------- | ---------- |
+| 3       | 2019-08-03 | 3         | 3       | 2019-01-19 | LG             | LG         |
+| 1       | 2019-08-04 | 2         | 2       | 2019-02-09 | Samsung        | Samsung    |
+| 2       | 2019-08-05 | 4         | 4       | 2019-05-21 | HP             | Lenovo     |
+
+| seller_id | 2nd_item_fav_brand |
+| --------- | ------------------ |
+| 3         | yes                |
+| 2         | yes                |
+| 4         | no                 |
+
+with cte as(
+    select *, dense_rank() over (partition by seller_id 
+order by order_date asc) ordering
+from orders
+), cte2 as(
+    select seller_id, (
+    case
+    when favorite_brand = item_brand then 'yes'
+    else 'no' end
+)2nd_item_fav_brand
+from (select order_date,item_id,seller_id from cte) o left join users u on u.user_id = o.seller_id
+left join items i using(item_id)
+)
+select seller_id, ifnull(2nd_item_fav_brand,'no') 2nd_item_fav_brand
+from (select user_id seller_id from users) c1 left join cte2 using(seller_id)
+
+select *, dense_rank() over (partition by seller_id 
+order by order_date desc) ordering
+from orders
+where (seller_id,order_date) not in (select seller_id, min(order_date) from orders group by seller_id)
+
+| order_id | order_date | item_id | buyer_id | seller_id | ordering |
+| -------- | ---------- | ------- | -------- | --------- | -------- |
+| 4        | 2019-08-04 | 1       | 4        | 2         | 1        |
+| 3        | 2019-08-03 | 3       | 2        | 3         | 1        |
+| 7        | 2019-08-06 | 2       | 2        | 4         | 1        |
+| 6        | 2019-08-05 | 4       | 3        | 4         | 2        |
+
+| order_id | order_date | item_id | buyer_id | seller_id | ordering |
+| -------- | ---------- | ------- | -------- | --------- | -------- |
+| 8        | 2019-08-04 | 2       | 3        | 1         | 1        |
+| 4        | 2019-08-04 | 1       | 4        | 2         | 1        |
+| 1        | 2019-08-01 | 4       | 1        | 2         | 2        |
+| 3        | 2019-08-03 | 3       | 2        | 3         | 1        |
+| 2        | 2019-08-02 | 2       | 1        | 3         | 2        |
+| 7        | 2019-08-06 | 2       | 2        | 4         | 1        |
+| 6        | 2019-08-05 | 4       | 3        | 4         | 2        |
+| 5        | 2019-08-04 | 1       | 3        | 4         | 3        |
