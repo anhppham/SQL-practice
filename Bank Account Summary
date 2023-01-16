@@ -1,0 +1,110 @@
+Leetcode Bank (LCB) helps its coders in making virtual payments. Our bank records all transactions in the table Transaction, we want to find out the current balance of all users and check whether they have breached their credit limit (If their current credit is less than 0).
+
+Write an SQL query to report.
+
+user_id,
+user_name,
+credit, current balance after performing transactions, and
+credit_limit_breached, check credit_limit ("Yes" or "No")
+Return the result table in any order.
+
+The query result format is in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Users table:
++------------+--------------+-------------+
+| user_id    | user_name    | credit      |
++------------+--------------+-------------+
+| 1          | Moustafa     | 100         |
+| 2          | Jonathan     | 200         |
+| 3          | Winston      | 10000       |
+| 4          | Luis         | 800         | 
++------------+--------------+-------------+
+Transactions table:
++------------+------------+------------+----------+---------------+
+| trans_id   | paid_by    | paid_to    | amount   | transacted_on |
++------------+------------+------------+----------+---------------+
+| 1          | 1          | 3          | 400      | 2020-08-01    |
+| 2          | 3          | 2          | 500      | 2020-08-02    |
+| 3          | 2          | 1          | 200      | 2020-08-03    |
++------------+------------+------------+----------+---------------+
+Output: 
++------------+------------+------------+-----------------------+
+| user_id    | user_name  | credit     | credit_limit_breached |
++------------+------------+------------+-----------------------+
+| 1          | Moustafa   | -100       | Yes                   | 
+| 2          | Jonathan   | 500        | No                    |
+| 3          | Winston    | 9900       | No                    |
+| 4          | Luis       | 800        | No                    |
++------------+------------+------------+-----------------------+
+Explanation: 
+Moustafa paid $400 on "2020-08-01" and received $200 on "2020-08-03", credit (100 -400 +200) = -$100
+Jonathan received $500 on "2020-08-02" and paid $200 on "2020-08-08", credit (200 +500 -200) = $500
+Winston received $400 on "2020-08-01" and paid $500 on "2020-08-03", credit (10000 +400 -500) = $9990
+Luis did not received any transfer, credit = $800
+
+select *
+from users u left join transactions t on u.user_id = t.paid_by
+
+| user_id | user_name | credit | trans_id | paid_by | paid_to | amount | transacted_on |
+| ------- | --------- | ------ | -------- | ------- | ------- | ------ | ------------- |
+| 1       | Moustafa  | 100    | 1        | 1       | 3       | 400    | 2020-08-01    |
+| 2       | Jonathan  | 200    | 3        | 2       | 1       | 200    | 2020-08-03    |
+| 3       | Winston   | 10000  | 2        | 3       | 2       | 500    | 2020-08-02    |
+| 4       | Luis      | 800    |          |         |         |        |               |
+
+with cte as(
+    select user_id, user_name, t.amount debit_amount
+from (select user_id, user_name from users) u left join transactions t on u.user_id = t.paid_by
+)
+select user_id, user_name, t.amount credit_amount
+from (select user_id, user_name from users) u left join transactions t on u.user_id = t.paid_to
+
+
+| user_id | user_name | debit_amount |
+| ------- | --------- | ------------ |
+| 1       | Moustafa  | 400          |
+| 2       | Jonathan  | 200          |
+| 3       | Winston   | 500          |
+| 4       | Luis      |              |
+
+| user_id | user_name | credit_amount |
+| ------- | --------- | ------------- |
+| 1       | Moustafa  | 200           |
+| 2       | Jonathan  | 500           |
+| 3       | Winston   | 400           |
+| 4       | Luis      |               |
+
+with cte as(
+    select user_id, user_name, ifnull(t.amount,0) debit_amount
+from (select user_id, user_name from users) u left join transactions t on u.user_id = t.paid_by
+), cte2 as(
+    select user_id, user_name, ifnull(t.amount,0) credit_amount
+from (select user_id, user_name from users) u left join transactions t on u.user_id = t.paid_to
+)
+select u.user_id, u.user_name, (credit-debit_amount+credit_amount) credit
+from users u left join cte c1 using (user_id)
+left join cte2 c2 using(user_id)
+
+with cte as(
+    select user_id, user_name, ifnull(sum(t.amount),0) debit_amount
+from (select user_id, user_name from users) u left join transactions t on u.user_id = t.paid_by
+group by user_id
+), cte2 as(
+    select user_id, user_name, ifnull(sum(t.amount),0) credit_amount
+from (select user_id, user_name from users) u left join transactions t on u.user_id = t.paid_to
+group by user_id
+)
+select *,(
+    case 
+    when credit < 0 then 'Yes'
+    else 'No' end
+) credit_limit_breached
+from (select u.user_id, u.user_name, sum((credit-debit_amount+credit_amount)) credit
+from users u left join cte c1 using (user_id)
+left join cte2 c2 using(user_id)
+group by u.user_id)t
