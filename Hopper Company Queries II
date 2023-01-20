@@ -91,3 +91,26 @@ By the end of September --> five active drivers (10, 8, 5, 7, 4) and no accepted
 By the end of October --> six active drivers (10, 8, 5, 7, 4, 1) and no accepted rides. The percentage is 0%.
 By the end of November --> six active drivers (10, 8, 5, 7, 4, 1) and two accepted rides by two different drivers (1, 7). The percentage is (2 / 6) * 100 = 33.33%.
 By the end of December --> six active drivers (10, 8, 5, 7, 4, 1) and one accepted ride by driver (4). The percentage is (1 / 6) * 100 = 16.67%.
+
+
+with RECURSIVE the_month as(
+    select 1 as month
+    union
+    select month+1
+    from the_month
+    where month <12
+), active_drivers as (select *, (case
+    when year(join_date) = 2019 then 1 
+    else month(join_date) end)month_rider
+from Drivers
+where year(join_date)<=2020
+),accepted_rides as(
+    select month(requested_at) month, count(distinct ride_id) accepted_rides
+from AcceptedRides a left join Rides r using(ride_id)
+where year(requested_at) = 2020
+group by month(requested_at))
+select t.month, count(distinct driver_id) active_drivers, ifnull(accepted_rides,0) accepted_rides
+from the_month t left join active_drivers a1 on t.month>=a1.month_rider
+left join accepted_rides a2 on t.month=a2.month
+group by t.month
+order by t.month asc
