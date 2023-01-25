@@ -165,3 +165,69 @@ from matches m1 left join matches m2 on m1.home_team_id = m2.away_team_id
 | 4            | 1            | 5               | 2               |
 | 1            | 4            | 0               | 1               |
 | 1            | 6            | 3               | 3               |
+
+with cte as (
+    select *,(
+    case
+    when home_team_goals > away_team_goals then home_team_id
+    when home_team_goals < away_team_goals then away_team_id
+    else null end
+)winning_team
+from matches
+), cte2 as(
+    select home_team_id
+from cte
+where winning_team is null
+union all
+select away_team_id
+from cte
+where winning_team is null
+), cte3 as(
+    select winning_team
+    from cte
+    where winning_team is not null
+), cte4 as(
+    select winning_team team_id, sum(points) points
+from (select *, '3' points
+from cte3
+union all
+select *, '1' points
+from cte2)t
+group by winning_team
+), cte5 as (
+    select home_team_id team_id, count(*) matches_played, sum(home_team_goals) goal_for
+from (
+    select home_team_id, home_team_goals
+from matches
+union all 
+select away_team_id, away_team_goals
+from matches
+)t
+group by home_team_id
+), cte6 as(select home_team_id team_id, sum(away_team_goals) goal_against
+from(select distinct m1.home_team_id, m1.away_team_goals
+from matches m1 left join matches m2 on m1.home_team_id = m2.away_team_id
+union all
+select distinct m2.away_team_id, m2.home_team_goals
+from matches m1 left join matches m2 on m1.home_team_id = m2.away_team_id)t
+group by team_id)
+select team_name,matches_played,ifnull(points,0) points, ifnull(goal_for,0) goal_for, ifnull(goal_against,0) goal_against, (c5.goal_for-c6.goal_against) goal_diff
+from cte5 c5 left join teams t on t.team_id = c5.team_id
+left join cte4 c4 on c5.team_id = c4.team_id 
+left join cte6 c6 on c5.team_id = c6.team_id
+order by points desc,goal_diff desc, team_name
+
+
+#solution
+select t.team_name,
+count(*) matches_played, sum(case
+when home > away then 3 when home = away then 1 else 0 end) points,
+sum(home) goal_for, sum(away) goal_against, sum(home-away)goal_diff
+from (select home_team_id team_id, home_team_goals as home, away_team_goals as away 
+from matches
+union all
+select away_team_id as home_team_id, away_team_goals as home, home_team_goals as away 
+from matches) m
+join teams t using(team_id)
+group by team_id
+order by points desc, goal_diff desc, team_name
