@@ -66,3 +66,24 @@ group by account_id,date_format(day, '%Y-%m')) t left join accounts a using(acco
 | 4          | 10400      | 10400      | n         |
 | 4          | 49300      | 10400      | y         |
 | 4          | 56300      | 10400      | y         |
+
+
+select *, (case
+    when sum_amount > max_income then 'y'
+    else 'n' end) selection
+from (select distinct account_id, sum(amount) sum_amount
+from transactions 
+where type = 'Creditor'
+group by account_id,date_format(day, '%Y-%m')
+having count(*) >= 2) t left join accounts a using(account_id)
+
+| account_id | sum_amount | max_income | selection |
+| ---------- | ---------- | ---------- | --------- |
+| 10         | 69000      | 82000      | n         |
+
+select distinct account_id,date_format(day, '%Y-%m') month, sum(amount) sum_amount
+from transactions 
+where type = 'Creditor'
+group by account_id,date_format(day, '%Y-%m')
+order by account_id,date_format(day, '%Y-%m')
+#having count(*) >= 2
