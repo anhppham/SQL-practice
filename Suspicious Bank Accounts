@@ -87,3 +87,55 @@ where type = 'Creditor'
 group by account_id,date_format(day, '%Y-%m')
 order by account_id,date_format(day, '%Y-%m')
 #having count(*) >= 2
+
+with cte as (
+    select *, ifnull((month - lag(month,1) over (partition by account_id order by month)),0) previous_month
+from (select distinct account_id,date_format(day, '%m') month, sum(amount) sum_amount
+from transactions 
+where type = 'Creditor'
+group by account_id,date_format(day, '%Y-%m')
+order by account_id,date_format(day, '%Y-%m'))t
+), cte2 as(
+    select *
+    from cte
+    where previous_month in (0,1)
+    group by account_id
+    having count(account_id) >= 2
+)
+select *
+from (select * from cte where previous_month in (0,1))t left join accounts using(account_id)
+where account_id in (select account_id from cte2) #and (sum_amount > max_income)
+
+
+#solution
+with cte as (
+    select t.account_id,date_format(day, '%m') month, sum(amount) sum_amount,max_income
+from transactions t left join accounts a on t.account_id = a.account_id
+where type = 'Creditor'
+group by account_id,date_format(day, '%Y-%m')
+order by account_id,date_format(day, '%Y-%m')
+), cte2 as(
+    select *
+from cte
+where sum_amount > max_income
+)
+select c1.account_id
+from cte2 c1, cte2 c2
+where c1.account_id = c2.account_id and period_diff(c1.month,c2.month) = 1
+group by c1.account_id
+order by c1.account_id
+
+| account_id | month | sum_amount | max_income | account_id | month | sum_amount | max_income |
+| ---------- | ----- | ---------- | ---------- | ---------- | ----- | ---------- | ---------- |
+| 3          | 06    | 300100     | 21000      | 3          | 07    | 64900      | 21000      |
+| 3          | 06    | 300100     | 21000      | 3          | 06    | 300100     | 21000      |
+| 3          | 07    | 64900      | 21000      | 3          | 07    | 64900      | 21000      |
+| 3          | 07    | 64900      | 21000      | 3          | 06    | 300100     | 21000      |
+| 4          | 05    | 49300      | 10400      | 4          | 05    | 49300      | 10400      |
+| 4          | 05    | 49300      | 10400      | 4          | 07    | 56300      | 10400      |
+| 4          | 07    | 56300      | 10400      | 4          | 05    | 49300      | 10400      |
+| 4          | 07    | 56300      | 10400      | 4          | 07    | 56300      | 10400      |
+
+| account_id | month | sum_amount | max_income | account_id | month | sum_amount | max_income |
+| ---------- | ----- | ---------- | ---------- | ---------- | ----- | ---------- | ---------- |
+| 3          | 07    | 64900      | 21000      | 3          | 06    | 300100     | 21000      |
