@@ -72,5 +72,6 @@ with cte as(
 from Confirmations
 group by user_id
 )
-select user_id, (ifnull(counting_confirm),0)/
+select user_id, ifnull(round((ifnull(counting_confirm,0)/request_time),2),0.00) confirmation_rate
 from signups s left join cte c1 using(user_id)
+
