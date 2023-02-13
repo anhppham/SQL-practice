@@ -1,0 +1,56 @@
+Write an SQL query to independently:
+
+order first_col in ascending order.
+order second_col in descending order.
+The query result format is in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Data table:
++-----------+------------+
+| first_col | second_col |
++-----------+------------+
+| 4         | 2          |
+| 2         | 3          |
+| 3         | 1          |
+| 1         | 4          |
++-----------+------------+
+Output: 
++-----------+------------+
+| first_col | second_col |
++-----------+------------+
+| 1         | 4          |
+| 2         | 3          |
+| 3         | 2          |
+| 4         | 1          |
++-----------+------------+
+
+with cte as(
+    select first_col, row_number() over (order by first_col) rank_1
+    from data
+), cte2 as(
+    select second_col, row_number() over (order by second_col desc) rank_2
+    from data
+    order by second_col
+)
+select first_col,second_col
+from cte c1 join cte2 c2 on c1.rank_1 = c2.rank_2
+
+| first_col | rank_1 | second_col | rank_2 |
+| --------- | ------ | ---------- | ------ |
+| 5         | 1      | 98         | 1      |
+| 47        | 2      | 96         | 2      |
+| 55        | 3      | 69         | 3      |
+| 60        | 4      | 47         | 4      |
+| 60        | 5      | 10         | 5      |
+| 71        | 6      | 4          | 6      |
+
+| first_col | rank_1 | second_col | rank_2 |
+| --------- | ------ | ---------- | ------ |
+| 1         | 1      | 4          | 1      |
+| 2         | 2      | 3          | 2      |
+| 3         | 3      | 2          | 3      |
+| 4         | 4      | 1          | 4      |
