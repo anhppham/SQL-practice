@@ -1,0 +1,87 @@
+Example 1:
+
+Input: 
+Keywords table:
++----------+----------+
+| topic_id | word     |
++----------+----------+
+| 1        | handball |
+| 1        | football |
+| 3        | WAR      |
+| 2        | Vaccine  |
++----------+----------+
+Posts table:
++---------+------------------------------------------------------------------------+
+| post_id | content                                                                |
++---------+------------------------------------------------------------------------+
+| 1       | We call it soccer They call it football hahaha                         |
+| 2       | Americans prefer basketball while Europeans love handball and football |
+| 3       | stop the war and play handball                                         |
+| 4       | warning I planted some flowers this morning and then got vaccinated    |
++---------+------------------------------------------------------------------------+
+Output: 
++---------+------------+
+| post_id | topic      |
++---------+------------+
+| 1       | 1          |
+| 2       | 1          |
+| 3       | 1,3        |
+| 4       | Ambiguous! |
++---------+------------+
+Explanation: 
+1: "We call it soccer They call it football hahaha"
+"football" expresses topic 1. There is no other word that expresses any other topic.
+
+2: "Americans prefer basketball while Europeans love handball and football"
+"handball" expresses topic 1. "football" expresses topic 1. 
+There is no other word that expresses any other topic.
+
+3: "stop the war and play handball"
+"war" expresses topic 3. "handball" expresses topic 1.
+There is no other word that expresses any other topic.
+
+4: "warning I planted some flowers this morning and then got vaccinated"
+There is no word in this sentence that expresses any topic. Note that "warning" is different from "war" although they have a common prefix. 
+This post is ambiguous.
+
+Note that it is okay to have one word that expresses more than one topic.
+
+
+select *
+from posts a
+left join keywords b
+on concat(' ', lower(a.content), ' ') like concat('% ', lower(b.word), ' %')
+
+| post_id | content                                                                | topic_id | word     |
+| ------- | ---------------------------------------------------------------------- | -------- | -------- |
+| 1       | We call it soccer They call it football hahaha                         | 1        | football |
+| 2       | Americans prefer basketball while Europeans love handball and football | 1        | football |
+| 2       | Americans prefer basketball while Europeans love handball and football | 1        | handball |
+| 3       | stop the war and play handball                                         | 3        | WAR      |
+| 3       | stop the war and play handball                                         | 1        | handball |
+| 4       | warning I planted some flowers this morning and then got vaccinated    | null     | null     |
+
+
+select 
+    post_id, group_concat(distinct topic_id order by cast(topic_id as char))
+    #coalesce(group_concat(distinct topic_id order by cast(topic_id as char)), 'Ambiguous!') as topic
+from posts a
+left join keywords b
+on concat(' ', lower(a.content), ' ') like concat('% ', lower(b.word), ' %')
+group by post_id;
+
+| post_id | group_concat(distinct topic_id order by cast(topic_id as char)) |
+| ------- | --------------------------------------------------------------- |
+| 1       | 1                                                               |
+| 2       | 1                                                               |
+| 3       | 1,3                                                             |
+| 4       | null                                                            |
+
+#final solution
+select 
+    post_id, 
+    coalesce(group_concat(distinct topic_id order by cast(topic_id as char)), 'Ambiguous!') as topic
+from posts a
+left join keywords b
+on concat(' ', lower(a.content), ' ') like concat('% ', lower(b.word), ' %')
+group by post_id;
