@@ -1,0 +1,89 @@
+
+Buses and passengers arrive at the LeetCode station. If a bus arrives at the station at a time tbus and a passenger arrived at a time tpassenger where tpassenger <= tbus and the passenger did not catch any bus, the passenger will use that bus. In addition, each bus has a capacity. If at the moment the bus arrives at the station there are more passengers waiting than its capacity capacity, only capacity passengers will use the bus.
+
+Write an SQL query to report the number of users that used each bus.
+
+Return the result table ordered by bus_id in ascending order.
+
+The query result format is in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Buses table:
++--------+--------------+----------+
+| bus_id | arrival_time | capacity |
++--------+--------------+----------+
+| 1      | 2            | 1        |
+| 2      | 4            | 10       |
+| 3      | 7            | 2        |
++--------+--------------+----------+
+Passengers table:
++--------------+--------------+
+| passenger_id | arrival_time |
++--------------+--------------+
+| 11           | 1            |
+| 12           | 1            |
+| 13           | 5            |
+| 14           | 6            |
+| 15           | 7            |
++--------------+--------------+
+Output: 
++--------+----------------+
+| bus_id | passengers_cnt |
++--------+----------------+
+| 1      | 1              |
+| 2      | 1              |
+| 3      | 2              |
++--------+----------------+
+Explanation: 
+- Passenger 11 arrives at time 1.
+- Passenger 12 arrives at time 1.
+- Bus 1 arrives at time 2 and collects passenger 11 as it has one empty seat.
+
+- Bus 2 arrives at time 4 and collects passenger 12 as it has ten empty seats.
+
+- Passenger 12 arrives at time 5.
+- Passenger 13 arrives at time 6.
+- Passenger 14 arrives at time 7.
+- Bus 3 arrives at time 7 and collects passengers 12 and 13 as it has two empty seats.
+
+select bus_id, b.arrival_time bus_arrival_time,capacity,passenger_id,s.arrival_time pass_arrival_time, rank() over (partition by bus_id order by b.arrival_time,passenger_id) partitioning
+from buses b join Passengers s on b.arrival_time >= s.arrival_time 
+#group by bus_id
+order by bus_arrival_time,bus_id
+
+| bus_id | bus_arrival_time | capacity | passenger_id | pass_arrival_time | partitioning |
+| ------ | ---------------- | -------- | ------------ | ----------------- | ------------ |
+| 1      | 2                | 1        | 11           | 1                 | 1            |
+| 1      | 2                | 1        | 12           | 1                 | 2            |
+| 2      | 4                | 10       | 11           | 1                 | 1            |
+| 2      | 4                | 10       | 12           | 1                 | 2            |
+| 3      | 7                | 2        | 11           | 1                 | 1            |
+| 3      | 7                | 2        | 12           | 1                 | 2            |
+| 3      | 7                | 2        | 13           | 5                 | 3            |
+| 3      | 7                | 2        | 14           | 6                 | 4            |
+| 3      | 7                | 2        | 15           | 7                 | 5            |
+
+
+WITH TEMP AS (
+SELECT bus_id, b.arrival_time, capacity, count(passenger_id) AS num
+FROM Buses b  LEFT JOIN Passengers p  ON p.arrival_time <= b.arrival_time
+WHERE bus_id is not NULL
+GROUP BY bus_id
+ORDER BY arrival_time
+)
+SELECT bus_id, passengers_cnt from (
+SELECT bus_id, capacity, num,
+      @passengers_cnt:=LEAST(capacity,num-@accum) as passengers_cnt, 
+      @accum:=@accum+@passengers_cnt #acculation of # of passengers alreay on the bus
+FROM TEMP, (SELECT @accum:= 0, @passengers_cnt:=0) INIT) temp
+ORDER BY bus_id
+
+| bus_id | capacity | num | passengers_cnt | @accum:=@accum+@passengers_cnt |
+| ------ | -------- | --- | -------------- | ------------------------------ |
+| 1      | 1        | 2   | 1              | 1                              |
+| 2      | 10       | 2   | 1              | 2                              |
+| 3      | 2        | 5   | 2              | 4                              |
