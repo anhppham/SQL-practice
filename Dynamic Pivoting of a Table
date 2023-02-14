@@ -1,0 +1,85 @@
+Implement the procedure PivotProducts to reorganize the Products table so that each row has the id of one product and its price in each store. The price should be null if the product is not sold in a store. The columns of the table should contain each store and they should be sorted in lexicographical order.
+
+The procedure should return the table after reorganizing it.
+
+Return the result table in any order.
+
+The query result format is in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Products table:
++------------+----------+-------+
+| product_id | store    | price |
++------------+----------+-------+
+| 1          | Shop     | 110   |
+| 1          | LC_Store | 100   |
+| 2          | Nozama   | 200   |
+| 2          | Souq     | 190   |
+| 3          | Shop     | 1000  |
+| 3          | Souq     | 1900  |
++------------+----------+-------+
+Output: 
++------------+----------+--------+------+------+
+| product_id | LC_Store | Nozama | Shop | Souq |
++------------+----------+--------+------+------+
+| 1          | 100      | null   | 110  | null |
+| 2          | null     | 200    | null | 190  |
+| 3          | null     | null   | 1000 | 1900 |
++------------+----------+--------+------+------+
+Explanation: 
+We have 4 stores: Shop, LC_Store, Nozama, and Souq. We first order them lexicographically to be: LC_Store, Nozama, Shop, and Souq.
+Now, for product 1, the price in LC_Store is 100 and in Shop is 110. For the other two stores, the product is not sold so we set the price as null.
+Similarly, product 2 has a price of 200 in Nozama and 190 in Souq. It is not sold in the other two stores.
+For product 3, the price is 1000 in Shop and 1900 in Souq. It is not sold in the other two stores.
+
+#SQL query
+with cte as(
+        select product_id, price LC_Store
+    from products
+    where store = 'LC_Store'
+    ), cte2 as(select product_id, price Nozama
+    from products
+    where store = 'Nozama'),cte3 as(select product_id, price Shop
+    from products
+    where store = 'Shop'),cte4 as(select product_id, price Souq
+    from products
+    where store = 'Souq')
+    select t.product_id,LC_Store, Shop,Nozama, Souq
+    from (select distinct product_id from products)t 
+    left join cte c1 on t.product_id = c1.product_id
+    left join cte2 c2 on t.product_id = c2.product_id
+    left join cte3 c3 on t.product_id = c3.product_id
+    left join cte4 c4 on t.product_id = c4.product_id;
+    
+#procedure
+drop procedure if exists PivotProducts;
+
+delimiter //
+
+create procedure PivotProducts()
+begin
+    set session group_concat_max_len = 1000000; # default is 1024
+
+    set @sql = null;
+	select group_concat(
+		distinct concat(
+			'sum(if(store = "', store, '", price, null)) as ', store
+		)
+	)
+	into @sql
+	from Products;
+
+	set @sql = concat('select product_id, ', @sql, ' from Products group by 1');
+
+	prepare stmt from @sql;
+	execute stmt;
+	deallocate prepare stmt;
+end //
+
+delimiter ;
+
+call PivotProducts();
