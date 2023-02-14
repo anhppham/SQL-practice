@@ -1,0 +1,75 @@
+
+Write an SQL query to report the IDs of the users that made any two purchases at most 7 days apart.
+
+Return the result table ordered by user_id.
+
+The query result format is in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Purchases table:
++-------------+---------+---------------+
+| purchase_id | user_id | purchase_date |
++-------------+---------+---------------+
+| 4           | 2       | 2022-03-13    |
+| 1           | 5       | 2022-02-11    |
+| 3           | 7       | 2022-06-19    |
+| 6           | 2       | 2022-03-20    |
+| 5           | 7       | 2022-06-19    |
+| 2           | 2       | 2022-06-08    |
++-------------+---------+---------------+
+Output: 
++---------+
+| user_id |
++---------+
+| 2       |
+| 7       |
++---------+
+Explanation: 
+User 2 had two purchases on 2022-03-13 and 2022-03-20. Since the second purchase is within 7 days of the first purchase, we add their ID.
+User 5 had only 1 purchase.
+User 7 had two purchases on the same day so we add their ID.
+
+select *,lag(purchase_date,1) over (partition by user_id order by purchase_date) next_ranking
+from purchases
+where user_id in (select user_id
+from purchases
+group by user_id
+having count(*) >= 2)
+
+| purchase_id | user_id | purchase_date | next_ranking |
+| ----------- | ------- | ------------- | ------------ |
+| 4           | 2       | 2022-03-13    | null         |
+| 6           | 2       | 2022-03-20    | 2022-03-13   |
+| 2           | 2       | 2022-06-08    | 2022-03-20   |
+| 3           | 7       | 2022-06-19    | null         |
+| 5           | 7       | 2022-06-19    | 2022-06-19   |
+
+| purchase_id | user_id | purchase_date | next_date  | qualified |
+| ----------- | ------- | ------------- | ---------- | --------- |
+| 4           | 2       | 2022-03-13    | null       | no        |
+| 6           | 2       | 2022-03-20    | 2022-03-13 | yes       |
+| 2           | 2       | 2022-06-08    | 2022-03-20 | no        |
+| 3           | 7       | 2022-06-19    | null       | no        |
+| 5           | 7       | 2022-06-19    | 2022-06-19 | yes       |
+
+# Write your MySQL query statement below
+with cte as(
+    select *,lag(purchase_date,1) over (partition by user_id order by purchase_date) previous_date
+from purchases
+where user_id in (select user_id
+from purchases
+group by user_id
+having count(*) >= 2)
+)
+select distinct user_id
+from (select *,(
+    case
+    when datediff(purchase_date,previous_date) <= 7 then 'yes'
+    else 'no' end
+)qualified
+from cte)t
+where qualified = 'yes'
