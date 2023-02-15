@@ -1,0 +1,66 @@
+
+Write an SQL query to show the details of the invoice with the highest price. If two or more invoices have the same price, return the details of the one with the smallest invoice_id.
+
+Return the result table in any order.
+
+The query result format is shown in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+Products table:
++------------+-------+
+| product_id | price |
++------------+-------+
+| 1          | 100   |
+| 2          | 200   |
++------------+-------+
+Purchases table:
++------------+------------+----------+
+| invoice_id | product_id | quantity |
++------------+------------+----------+
+| 1          | 1          | 2        |
+| 3          | 2          | 1        |
+| 2          | 2          | 3        |
+| 2          | 1          | 4        |
+| 4          | 1          | 10       |
++------------+------------+----------+
+Output: 
++------------+----------+-------+
+| product_id | quantity | price |
++------------+----------+-------+
+| 2          | 3        | 600   |
+| 1          | 4        | 400   |
++------------+----------+-------+
+Explanation: 
+Invoice 1: price = (2 * 100) = $200
+Invoice 2: price = (4 * 100) + (3 * 200) = $1000
+Invoice 3: price = (1 * 200) = $200
+Invoice 4: price = (10 * 100) = $1000
+
+The highest price is $1000, and the invoices with the highest prices are 2 and 4. We return the details of the one with the smallest ID, which is invoice 2.
+
+select *, sum(quantity*price) total_pricing
+from products p join Purchases p1 using(product_id)
+group by invoice_id
+
+| product_id | price | invoice_id | quantity | total_pricing |
+| ---------- | ----- | ---------- | -------- | ------------- |
+| 1          | 100   | 1          | 2        | 200           |
+| 2          | 200   | 3          | 1        | 200           |
+| 2          | 200   | 2          | 3        | 1000          |
+| 1          | 100   | 4          | 10       | 1000          |
+
+# Write your MySQL query statement below
+with cte as(
+    select *, sum(quantity*price) total_pricing
+from products p join Purchases p1 using(product_id)
+group by invoice_id
+), cte2 as(select distinct min(invoice_id) min_invoice_id
+from cte
+where total_pricing = (select max(total_pricing) from cte))
+select p.product_id,quantity,price*quantity price
+from Products p join purchases p1 using(product_id)
+where invoice_id = (select * from cte2)
