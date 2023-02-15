@@ -1,0 +1,70 @@
+
+Write an SQL query to replace the null values of drink with the name of the drink of the previous row that is not null. It is guaranteed that the drink of the first row of the table is not null.
+
+Return the result table in the same order as the input.
+
+The query result format is shown in the following example.
+
+ 
+
+Example 1:
+
+Input: 
+CoffeeShop table:
++----+------------------+
+| id | drink            |
++----+------------------+
+| 9  | Mezcal Margarita |
+| 6  | null             |
+| 7  | null             |
+| 3  | Americano        |
+| 1  | Daiquiri         |
+| 2  | null             |
++----+------------------+
+Output: 
++----+------------------+
+| id | drink            |
++----+------------------+
+| 9  | Mezcal Margarita |
+| 6  | Mezcal Margarita |
+| 7  | Mezcal Margarita |
+| 3  | Americano        |
+| 1  | Daiquiri         |
+| 2  | Daiquiri         |
++----+------------------+
+Explanation: 
+For ID 6, the previous value that is not null is from ID 9. We replace the null with "Mezcal Margarita".
+For ID 7, the previous value that is not null is from ID 9. We replace the null with "Mezcal Margarita".
+For ID 2, the previous value that is not null is from ID 1. We replace the null with "Daiquiri".
+Note that the rows in the output are the same as in the input.
+
+
+The ISNULL() function returns 1 or 0 depending on whether an expression is NULL.
+
+If expression is NULL, this function returns 1. Otherwise, it returns 0.
+
+WITH cte AS (
+    SELECT id, drink, ROW_NUMBER() OVER () AS nb FROM CoffeeShop),
+cte2 AS (SELECT id, drink, nb, SUM(1-ISNULL(drink)) OVER (ORDER BY nb) AS group_id 
+FROM cte)
+select *
+from cte2
+
+| id | drink            | nb | group_id |
+| -- | ---------------- | -- | -------- |
+| 9  | Mezcal Margarita | 1  | 1        |
+| 6  | null             | 2  | 1        |
+| 7  | null             | 3  | 1        |
+| 3  | Americano        | 4  | 2        |
+| 1  | Daiquiri         | 5  | 3        |
+| 2  | null             | 6  | 3        |
+
+WITH cte AS (
+    SELECT id, drink, ROW_NUMBER() OVER () AS nb FROM CoffeeShop),
+cte2 AS (SELECT id, drink, nb, sum(1-ISNULL(drink)) OVER (ORDER BY nb) AS group_id 
+FROM cte)
+SELECT id, FIRST_VALUE(drink) OVER (PARTITION BY group_id) AS drink
+FROM cte2
+ORDER BY nb;
+
+
