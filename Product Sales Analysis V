@@ -1,0 +1,6 @@
+
+
+select s.user_id, sum(quantity*price) spending
+from sales s join product p using(product_id)
+group by s.user_id
+order by spending desc, user_id
